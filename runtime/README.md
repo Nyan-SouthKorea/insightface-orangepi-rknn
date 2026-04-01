@@ -31,6 +31,7 @@ results = sdk.infer(frame)
 - `FastAPI` backend
 - `React` frontend
 - 모델 전환과 메모리 정리
+- `live-state` 상태 스트림과 최신 결과 overlay
 - 갤러리 등록, 촬영 저장, 업로드, 삭제
 - 실시간 FPS와 메모리 상태 표시
 - OrangePI `systemd` service
@@ -55,15 +56,17 @@ results = sdk.infer(frame)
 3. `bash runtime/build_web_frontend.sh`
 4. 필요하면 `source ../envs/ifr_rknn_lite2_cp310/bin/activate`
 5. 수동 smoke:
-   `python runtime/web_backend/main.py --host 0.0.0.0 --port 5050 --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 --gallery-dir runtime/gallery --model-pack buffalo_m --backend rknn --model-zoo-root conversion/results/model_zoo --frontend-dist runtime/web_frontend/dist`
+   `python runtime/web_backend/main.py --host 0.0.0.0 --port 5050 --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 --gallery-dir runtime/gallery --model-pack buffalo_m --backend rknn --inference-fps 0 --model-zoo-root conversion/results/model_zoo --frontend-dist runtime/web_frontend/dist`
 6. service 설치:
    `bash runtime/install_orangepi_rknn_web_service.sh`
 
 ## 현재 고정 결정
 
 - 기본 SDK backend는 `rknn`, 기본 pack은 `buffalo_m`이다.
-- `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 네 pack 이름을 모두 web UI에서 전환 가능하게 유지한다.
-- 모델 전환은 새 SDK를 먼저 띄운 뒤 기존 SDK를 닫고 `gc.collect()`까지 수행하는 방식으로 처리한다.
+- `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_m_i8`, `buffalo_l` 다섯 pack 이름을 web UI에서 전환 가능하게 유지한다.
+- 모델 전환은 기본적으로 warm switch로 처리하고, 메모리 계열 실패가 나면 old SDK를 비운 뒤 cold retry와 복구를 시도한다.
+- 실시간 결과는 `/api/live-state/stream`으로 밀어 주고, frontend는 이 상태 스트림으로 overlay를 갱신한다.
+- backend 기본 추론 상한은 `0`, 즉 제한 없이 최신 프레임 우선 처리다.
 - 상태 표시 글자는 `cv2` overlay가 아니라 web UI 레이어에서 그린다.
 - 서비스 포트는 최종적으로 `5000`을 유지한다.
 - OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
@@ -82,6 +85,8 @@ results = sdk.infer(frame)
   - API route와 정적 frontend 연결
 - `runtime/web_backend/runtime_manager.py`
   - 카메라, SDK, FPS, 모델 전환, gallery 작업을 묶는 런타임 관리자
+- `runtime/benchmark_rknn_face_sdk.py`
+  - OrangePI에서 `FP16 / INT8` pack 비교 benchmark
 - `runtime/web_frontend/`
   - 운영용 web UI source와 build 결과
 - `runtime/install_orangepi_rknn_web_service.sh`

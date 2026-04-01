@@ -1,5 +1,8 @@
 *
 !.gitignore
 !README.local.md
+!calibration/
+!calibration/.gitignore
+!calibration/README.local.md
 !model_zoo/
 !model_zoo/**

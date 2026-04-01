@@ -5,11 +5,13 @@
 - 이 모듈은 `InsightFace` 계열 얼굴 모델을 `RKNN`으로 변환하는 경로를 맡는다.
 - 목표는 다른 사람도 그대로 따라 해서 같은 `RKNN model zoo`를 다시 만들 수 있는 재현 가능한 절차를 남기는 것이다.
 - 현재 canonical face-only pack은 `buffalo_sc`, `buffalo_m`, `buffalo_l`이고, `buffalo_s`는 alias manifest로 연결한다.
+- 현재 `INT8` 비교 pack은 `buffalo_m_i8`까지 만들었다.
 
 ## 이 모듈이 맡는 것
 
 - host 변환 환경
 - `ONNX -> RKNN` export entry
+- `INT8 calibration` 입력 묶음 준비
 - pack-level manifest 생성
 - alias pack 정리
 - 변환 절차 문서화
@@ -71,7 +73,32 @@ python conversion/export_insightface_pack_rknn.py \
   --skip-existing
 ```
 
-5. OrangePI에서 단건 smoke
+5. `INT8 calibration` 입력 준비
+
+- calibration 이미지는 private local 자산으로 보고 `conversion/results/calibration/` 아래에만 둔다.
+- 현재 canonical 준비 script는 `conversion/prepare_rknn_calibration_dataset.py`다.
+
+```bash
+python conversion/prepare_rknn_calibration_dataset.py \
+  --output-dir conversion/results/calibration/buffalo_m_i8 \
+  --source-glob runtime/results/face_benchmark_input.jpg \
+  --snapshot-url http://192.168.20.238:5000/api/snapshot.jpg \
+  --snapshot-count 24 \
+  --snapshot-interval 0.25
+```
+
+6. `buffalo_m_i8` 변환
+
+```bash
+python conversion/export_insightface_pack_rknn.py \
+  --model-packs buffalo_m_i8 \
+  --target-platform rk3588 \
+  --dtype i8 \
+  --detector-dataset conversion/results/calibration/buffalo_m_i8/detector_dataset.txt \
+  --recognizer-dataset conversion/results/calibration/buffalo_m_i8/recognizer_dataset.txt
+```
+
+7. OrangePI에서 단건 smoke
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
@@ -88,7 +115,7 @@ python runtime/probe_rknn_lite2.py \
   --input-size 112,112
 ```
 
-6. SDK smoke
+8. SDK smoke
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
@@ -108,12 +135,27 @@ sdk.close()
 PY
 ```
 
+9. OrangePI 성능 비교
+
+```bash
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/benchmark_rknn_face_sdk.py \
+  --image-path runtime/results/face_benchmark_input.jpg \
+  --gallery-dir runtime/gallery \
+  --model-packs buffalo_m,buffalo_m_i8 \
+  --repeat 20 \
+  --warmup 5 \
+  --output-json runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json
+```
+
 ## 현재 canonical 산출물
 
 - `conversion/results/model_zoo/rk3588/buffalo_sc/*`
 - `conversion/results/model_zoo/rk3588/buffalo_s/pack.json`
 - `conversion/results/model_zoo/rk3588/buffalo_m/*`
+- `conversion/results/model_zoo/rk3588/buffalo_m_i8/*`
 - `conversion/results/model_zoo/rk3588/buffalo_l/*`
+- `conversion/results/calibration/README.local.md`
 
 ## manifest 규칙
 
@@ -124,9 +166,11 @@ PY
 ## 현재 고정 결정
 
 - 기본 dtype은 `FP16`이다.
+- 현재 `INT8` 비교 candidate는 `buffalo_m_i8`이다.
 - `buffalo_s`는 별도 변환 대신 `buffalo_sc` alias로 유지한다.
 - detection 정규화는 `mean 127.5 / std 128.0`, recognition 정규화는 `mean 127.5 / std 127.5`다.
-- `INT8`는 나중에 calibration 입력 묶음이 정리되면 추가한다.
+- `INT8 calibration` 입력은 local-only `conversion/results/calibration/` 아래에 둔다.
+- detector와 recognizer는 필요하면 각기 다른 dataset txt를 받게 유지한다.
 
 ## 관련 문서
 

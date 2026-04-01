@@ -11,6 +11,7 @@
 
 - 현재 목적은 face-only `InsightFace -> RKNN` pack 경로를 반복 가능한 entry와 canonical model zoo로 정리하는 것이다.
 - 현재 canonical `FP16 RKNN` face pack은 `buffalo_sc`, `buffalo_m`, `buffalo_l`이고, `buffalo_s`는 alias manifest로 연결했다.
+- 현재 `INT8` 비교 pack은 `buffalo_m_i8`까지 만들었다.
 - host 변환 환경은 `../envs/ifr_rknn_host_cp310`로 만들었고, `RKNN Toolkit2 2.3.2 cp310` import를 확인했다.
 - 현재 기준 실제 동작에 필요한 host 고정 조합은 `Python 3.10`, `setuptools 75.8.0`, `onnx 1.16.1`이다.
 - `conversion/export_insightface_rknn.py`, `conversion/setup_rknn_host_env.sh`, `conversion/requirements_rknn_host_cp310.txt`를 추가했다.
@@ -21,7 +22,7 @@
 - `conversion/export_insightface_pack_rknn.py`로 pack-level export와 `pack.json` manifest 생성까지 묶었다.
 - canonical `RKNN model zoo`는 현재 tracked repo의 `conversion/results/model_zoo/rk3588/` 아래에 유지한다.
 - `conversion/README.md`에는 다른 사람이 그대로 따라 할 수 있는 host 변환 순서와 OrangePI smoke 절차를 정리했다.
-- 아직 정하지 않은 항목은 `INT8` calibration 입력 묶음, canonical model zoo metadata 형식, 나머지 모델팩 확장 순서다.
+- calibration 입력 묶음은 local-only `conversion/results/calibration/` 아래에 두고, 최종 tracked 산출물은 `buffalo_m_i8` pack으로 남긴다.
 
 ## 현재 모듈 결정
 
@@ -35,6 +36,8 @@
 - face-only 기준 실제 distinct pack은 `buffalo_sc`, `buffalo_m`, `buffalo_l` 세 개로 본다.
 - 변환 순서는 `buffalo_m -> buffalo_l`로 두고, `buffalo_s`는 우선 alias metadata로 정리한다.
 - 각 pack 폴더의 `pack.json`은 runtime이 pack 선택과 alias 해석에 읽는 canonical manifest다.
+- `INT8` pack은 필요하면 source pack과 다른 export name을 가질 수 있게 `source_pack` 필드를 둔다.
+- detector와 recognizer는 필요하면 서로 다른 calibration dataset txt를 받게 유지한다.
 
 ## 현재 활성 체크리스트
 
@@ -54,7 +57,10 @@
 - [x] `buffalo_l` detector / recognizer RKNN export
 - [x] `buffalo_l` OrangePI Lite2 smoke
 - [x] OrangePI `RKNN Lite2` smoke 성공
-- [ ] `INT8` calibration 경로 초안 작성
+- [x] local-only `INT8` calibration 입력 경로 정리
+- [x] `prepare_rknn_calibration_dataset.py` 추가
+- [x] `buffalo_m_i8` export
+- [x] `buffalo_m_i8` OrangePI benchmark 연결
 
 ## 현재 성공 경로
 
@@ -67,6 +73,7 @@
   - `conversion/results/model_zoo/rk3588/buffalo_sc/*`
   - `conversion/results/model_zoo/rk3588/buffalo_s/pack.json`
   - `conversion/results/model_zoo/rk3588/buffalo_m/*`
+  - `conversion/results/model_zoo/rk3588/buffalo_m_i8/*`
   - `conversion/results/model_zoo/rk3588/buffalo_l/*`
 
 ## Recent Logs
@@ -85,3 +92,6 @@
 - 2026-04-01: canonical `RKNN model zoo`를 tracked repo 아래에 두도록 `conversion/results/.gitignore`를 조정했고, host push 뒤 OrangePI pull 흐름으로 pack 배치를 닫았다.
 - 2026-04-01: host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN` export를 성공했고, OrangePI wrapper smoke까지 연결해 pack-level 변환 경로를 닫았다.
 - 2026-04-01: `conversion/README.md`를 host 환경 준비, pack export, OrangePI probe, SDK smoke까지 따라 할 수 있는 매뉴얼 형태로 다시 정리했다.
+- 2026-04-01: `prepare_rknn_calibration_dataset.py`를 추가해 live snapshot과 로컬 이미지를 묶어 `detector_dataset.txt`, `recognizer_dataset.txt`를 만들게 했다.
+- 2026-04-01: `export_insightface_pack_rknn.py`에 `source_pack`, `detector-dataset`, `recognizer-dataset` 인자를 추가해 `buffalo_m_i8` 같은 별도 export pack을 지원하게 했다.
+- 2026-04-01: host에서 `buffalo_m_i8` export를 성공했고, OrangePI benchmark에서 `buffalo_m` 대비 더 빠른 결과를 확인했다.

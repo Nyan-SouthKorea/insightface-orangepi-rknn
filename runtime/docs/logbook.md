@@ -15,11 +15,14 @@
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`, `../envs/ifr_rknn_lite2_cp310`로 고정했다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
 - 새 web console backend는 `runtime/web_backend/main.py`, frontend는 `runtime/web_frontend/`다.
-- 새 web console은 모델 전환, gallery 등록, 촬영 저장, 업로드, 삭제, 실시간 FPS, 메모리 표시를 지원한다.
+- 새 web console은 모델 전환, gallery 등록, 촬영 저장, 업로드, 삭제, `live-state` 결과 갱신, 실시간 FPS, 메모리 표시를 지원한다.
+- 기존 화면이 느리게 보이던 원인은 `1초 polling`과 backend 추론 제한이었고, 지금은 `live-state stream + 최신 프레임 우선` 구조로 고쳤다.
+- 갤러리 UI는 현재 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 세 영역으로 다시 나뉘어 있다.
 - OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 동작하는 것을 확인했다.
 - OrangePI `5050` 수동 smoke에서 `buffalo_sc`, `buffalo_m`, `buffalo_l` 전환과 메모리 정리가 정상 동작함을 확인했다.
 - OrangePI `5050` 수동 smoke에서 gallery API의 생성, 촬영 저장, 업로드, 삭제를 확인했다.
-- OrangePI `5000` service는 현재 새 web console로 교체를 마쳤고, `RKNNLite`, `capture_fps 9.85`, `inference_fps 7.15`, `stream_fps 12.25`, `gallery_count 1` 상태를 확인했다.
+- OrangePI `5000` service는 현재 새 web console로 교체를 마쳤고, `buffalo_m` 복귀 상태에서 `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `gallery_count 1`를 확인했다.
+- `buffalo_m_i8` pack을 추가했고 OrangePI benchmark에서 `pipeline 38.63 ms / 25.89 FPS`를 확인했다.
 - old CPU demo source와 old service 설치 스크립트는 canonical repo에서 제거했다.
 
 ## 현재 모듈 결정
@@ -38,7 +41,10 @@
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
 - 현재 web console은 `backend API`와 `frontend UI`를 분리한다.
+- 현재 web console overlay와 최근 결과는 `/api/live-state/stream`을 기준으로 갱신한다.
+- 현재 backend 기본 추론 상한은 `0`, 즉 제한 없이 최신 프레임 우선 처리다.
 - 현재 기본 runtime pack은 `buffalo_m`다.
+- `buffalo_m_i8`는 비교용 후보 pack으로 유지한다.
 - 현재 canonical service 설치 entry는 `runtime/install_orangepi_rknn_web_service.sh`다.
 
 ## 현재 CPU benchmark 상세
@@ -85,27 +91,27 @@
 | buffalo_m | buffalo_m | 575.48 | 156.22 | TestUser | 1.00 | 0.6494 |
 | buffalo_l | buffalo_l | 4389.70 | 124.09 | TestUser | 1.00 | 0.6753 |
 
+## 현재 `FP16 vs INT8` benchmark
+
+- 실행 위치: `OrangePI RK3588`
+- 실행 명령:
+  - `../envs/ifr_rknn_lite2_cp310/bin/python runtime/benchmark_rknn_face_sdk.py --image-path runtime/results/face_benchmark_input.jpg --gallery-dir runtime/gallery --model-packs buffalo_m,buffalo_m_i8 --repeat 20 --warmup 5 --output-json runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json`
+
+| model pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | top result | similarity |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| buffalo_m | fp | 458.73 | 47.36 | 25.31 | 80.92 | 12.36 | DongHoon | 0.6306 |
+| buffalo_m_i8 | i8 | 295.71 | 25.39 | 11.55 | 38.63 | 25.89 | DongHoon | 0.6300 |
+
 ## 현재 활성 체크리스트
 
-- [x] `face-only` 얼굴 인식 모듈 초안 작성
-- [x] CPU 검증용 requirements 파일 작성
-- [x] buffalo model pack CPU benchmark 기록
-- [x] OrangePI `RKNN Lite2` venv 생성 스크립트 작성
-- [x] RKNN runtime smoke entry script 초안 작성
-- [x] `buffalo_sc` RKNN backend 연결
-- [x] RKNN SDK 공용 표면 초안 작성
-- [x] wrapper API에 RKNN backend 선택 표면 추가
-- [x] 나머지 model pack을 wrapper 표면에 연결
-- [x] SDK 상위 package 구조 정리
-- [x] 새 web demo back 구조 설계
-- [x] 새 web demo front 구조 설계
-- [x] 모델 전환 UI 구현
-- [x] gallery 등록 / 삭제 / 촬영 API 구현
-- [x] gallery 등록 / 삭제 / 촬영 UI 구현
-- [x] gallery 저장 구조를 `person_id/meta.json/images`로 정리
-- [x] OrangePI `5050` 수동 smoke 성공
-- [x] 기존 `5000` service를 새 web console로 교체
-- [x] old CPU demo 흔적 삭제와 문서 마감
+- [x] gallery 관리 UI 가시성 개선
+- [x] `프로필 추가`와 `이름 변경 저장` 흐름 분리
+- [x] `/api/live-state`와 `/api/live-state/stream` 추가
+- [x] backend 추론 루프를 최신 프레임 우선 구조로 수정
+- [x] `capture_revision`, `result_revision`, 실제 추론 시간 표시
+- [x] `buffalo_m_i8` pack UI 전환 확인
+- [x] OrangePI `FP16 vs INT8` benchmark
+- [x] 반복 모델 전환 메모리 smoke
 
 ## Recent Logs
 
@@ -146,3 +152,8 @@
 - 2026-04-01: 새 service 설치 스크립트의 `/tmp` 고정 파일명 충돌을 `mktemp` 기반 임시 파일로 수정했다.
 - 2026-04-01: OrangePI가 최신 commit을 pull한 뒤 `insightface_gallery_web.service`를 새 `FastAPI + React` web console로 교체했고, `5000`에서 `runtime/web_backend/main.py`가 실제로 기동하는 것을 확인했다.
 - 2026-04-01: `http://192.168.20.238:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 검증했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
+- 2026-04-01: `live-state` API와 상태 스트림을 추가했고, `capture_revision`, `result_revision`, 실제 추론 시간 표시를 새 frontend에 연결했다.
+- 2026-04-01: gallery UI를 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 구조로 다시 정리해 저장된 인물 관리가 더 잘 보이게 수정했다.
+- 2026-04-01: `buffalo_m_i8` pack을 추가했고, OrangePI benchmark에서 `pipeline 38.63 ms / 25.89 FPS`를 기록했다.
+- 2026-04-01: 서비스 모델 전환 `buffalo_sc -> buffalo_m_i8 -> buffalo_l -> buffalo_m`을 다시 실행했고 모두 warm switch로 통과했다.
+- 2026-04-01: 활성 `MJPEG` 연결이 열린 상태에서 `systemctl restart`가 `deactivating`에 오래 머무를 수 있음을 봤고, 이 경우 `SIGKILL -> start`로 정리 후 재기동했다.

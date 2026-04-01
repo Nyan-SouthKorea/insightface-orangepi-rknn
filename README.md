@@ -13,11 +13,12 @@
 ## 최종 산출물 형태
 
 - `conversion/results/model_zoo/rk3588/`에는 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`의 canonical `RKNN model zoo`를 둔다.
+- `conversion/results/model_zoo/rk3588/buffalo_m_i8/`는 현재 검증 중인 `INT8` 비교 pack이다.
 - `runtime/face_sdk.py`와 `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 `RKNN face SDK` 표면을 맡는다.
 - `runtime/web_backend/main.py`는 `FastAPI` 기반 backend entry다.
 - `runtime/web_frontend/`는 `React + Vite` 기반 운영용 web UI다.
 - `runtime/install_orangepi_rknn_web_service.sh`는 OrangePI에서 같은 페이지 주소로 web console을 올리는 canonical service 설치 entry다.
-- web console은 `모델 전환`, `실시간 FPS`, `갤러리 등록`, `촬영 저장`, `다중 이미지 업로드`, `삭제`, `상태 표시`를 지원한다.
+- web console은 `모델 전환`, `실시간 FPS`, `live-state stream`, `갤러리 등록`, `촬영 저장`, `다중 이미지 업로드`, `삭제`, `상태 표시`를 지원한다.
 
 ## 현재 주경로
 
@@ -25,8 +26,9 @@
 2. canonical `pack.json`과 `.rknn` 산출물을 `conversion/results/model_zoo/`에 정리한다.
 3. OrangePI에서 `RKNN Lite2` 환경을 준비한다.
 4. `runtime.FaceSDK`로 detection, feature extraction, gallery 비교를 묶어 쓴다.
-5. `runtime/web_backend/main.py`와 `runtime/web_frontend/dist/`를 같은 service로 올린다.
-6. web console에서 모델을 바꾸고 갤러리를 관리하며 실기기 상태를 확인한다.
+5. `runtime/web_backend/main.py`는 `live-state` API와 `SSE` 기반 상태 스트림으로 최신 결과를 밀어 준다.
+6. `runtime/web_frontend/dist/`는 같은 service에서 갤러리 관리자와 실시간 overlay를 렌더링한다.
+7. web console에서 모델을 바꾸고 갤러리를 관리하며 실기기 상태를 확인한다.
 
 ## 저장소 구조
 
@@ -85,8 +87,10 @@
 
 - wrapper가 주 제품이고 web console은 운영 인터페이스다.
 - 현재 기본 runtime pack은 `buffalo_m`이다.
+- `buffalo_m_i8`는 현재 성능 비교용 candidate pack으로 유지한다.
 - `buffalo_s`는 `buffalo_sc` alias pack으로 유지한다.
 - 모델 전환은 web backend에서 메모리 정리와 예외 처리를 포함해 수행한다.
+- web console의 결과 갱신은 `1초 polling`이 아니라 `live-state stream`으로 처리한다.
 - 최종 web console은 이미지 위에 직접 글자를 그리지 않고, 웹 UI 레이어에서 상태를 표시한다.
 - CPU 경로는 benchmark와 비교 검증용으로만 유지하고, 실시간 주경로는 `RKNN`으로 본다.
 - 현재 개발 보드 `OrangePI RK3588`의 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`다.
