@@ -15,7 +15,8 @@
 - 현재 목적은 이 초안을 `OrangePI RK3588`에서 실제로 설치하고 서비스로 띄우는 것이다.
 - reference 저장소에서 가져올 최소 흐름은 `gallery 자동 로드 -> 웹캠 또는 JSON 입력 -> 실시간 얼굴 인식 -> 웹 스트리밍`이다.
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
-- 아직 정하지 않은 항목은 첫 번째 타깃 모델팩 고정 여부와 기본 카메라 입력 장치 번호다.
+- 현재 `OrangePI` 실기기 probe 기준 서비스 기본 카메라 번호는 `11`로 둔다.
+- 아직 정하지 않은 항목은 첫 번째 타깃 모델팩 고정 여부다.
 
 ## 현재 모듈 결정
 
@@ -35,8 +36,8 @@
 - [x] CPU 검증용 requirements 파일 작성
 - [x] OrangePI용 venv 생성 스크립트 작성
 - [x] systemd 서비스 파일 작성
-- [ ] OrangePI에서 venv 생성과 패키지 설치 smoke 수행
-- [ ] OrangePI에서 서비스 기동과 네트워크 접속 smoke 수행
+- [x] OrangePI에서 venv 생성과 패키지 설치 smoke 수행
+- [x] OrangePI에서 서비스 기동과 네트워크 접속 smoke 수행
 
 ## Recent Logs
 
@@ -47,3 +48,6 @@
 - 2026-04-01: `runtime/gallery/README.local.md`와 `.gitignore`를 추가해 로컬 gallery 규칙을 고정했다.
 - 2026-04-01: 로컬 `../envs/ifr_ort_cpu_probe` 생성, `onnxruntime 1.24.4`, `CPUExecutionProvider` 확인, `buffalo_s` 초기화까지 통과했다.
 - 2026-04-01: `face_gallery_web_demo.py`를 `json` 입력, 빈 gallery 상태로 띄워 `http://127.0.0.1:5060/api/status` 응답을 확인했다.
+- 2026-04-01: OrangePI에서 `python3.10-venv` 설치 뒤 `../envs/ifr_ort_cpu_probe` 생성, `onnxruntime 1.23.2`, `CPUExecutionProvider` 확인, `buffalo_s` 초기화까지 통과했다.
+- 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 올리고 LAN `api/status`, `stream.mjpg` 응답을 확인했다.
+- 2026-04-01: OrangePI 카메라 probe 결과 `0`, `21`은 실패했고 `11`, `20`은 열렸으므로 서비스 기본 카메라 번호를 `11`로 조정했다.

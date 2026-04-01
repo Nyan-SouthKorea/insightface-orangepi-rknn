@@ -15,7 +15,8 @@
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
-- 아직 확정되지 않은 항목은 첫 번째 타깃 모델 조합, 호스트 환경 버전, 실기기 측정 기준값, 기본 카메라 장치 번호다.
+- 아직 확정되지 않은 항목은 첫 번째 타깃 모델 조합, 호스트 환경 버전, 실기기 측정 기준값이다.
+- 현재 `OrangePI` 서비스 기본 카메라 장치 번호는 실기기 probe 기준 `11`로 둔다.
 - 아직 없는 항목은 변환 스크립트, 인벤토리 스크립트, logbook archive 스크립트, RKNN 실기기 entry script다.
 
 ## 현재 전역 결정
@@ -81,9 +82,9 @@
   - [x] `face-only runtime` 초안 구조를 현재 repo에 반영
   - [x] ONNX 검증용 venv 이름 확정
   - [x] ONNX 검증용 venv 생성
-  - [ ] OrangePI 설치 smoke
-  - [ ] OrangePI 서비스 smoke
-  - [ ] 같은 네트워크 PC 접속 확인
+  - [x] OrangePI 설치 smoke
+  - [x] OrangePI 서비스 smoke
+  - [x] 같은 네트워크 PC 접속 확인
   - [ ] 첫 번째 타깃 `InsightFace` 모델 조합 확정
   - [ ] 호스트 환경과 `OrangePI RK3588` 실기기 환경 표 작성
   - [ ] 변환 smoke 명령과 full 명령 초안 작성
@@ -115,3 +116,6 @@
 - 2026-04-01: 로컬 `../envs/ifr_ort_cpu_probe` 생성 smoke에서 `onnxruntime 1.24.4`, 사용 가능 provider `AzureExecutionProvider`, `CPUExecutionProvider`, `buffalo_s` 초기화를 확인했다.
 - 2026-04-01: 로컬 `face_gallery_web_demo.py`를 `json` 입력 경로로 띄워 `http://127.0.0.1:5060/api/status` 응답을 확인했고, 웹 endpoint 기본 동작이 살아 있음을 점검했다.
 - 2026-04-01: `wc -l` 재확인 결과 active logbook 줄 수는 `116`, `49`로 archive 기준 `1000`에 한참 못 미쳐 이번 턴 archive는 만들지 않았다.
+- 2026-04-01: OrangePI에서 `python3.10-venv`를 설치한 뒤 `../envs/ifr_ort_cpu_probe` 생성과 `onnxruntime 1.23.2` CPU provider 초기화를 확인했다.
+- 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://192.168.20.238:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
+- 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`은 실패했고 `11`, `20`이 열렸으므로 서비스 템플릿 기본 카메라 번호를 `11`로 조정했다.

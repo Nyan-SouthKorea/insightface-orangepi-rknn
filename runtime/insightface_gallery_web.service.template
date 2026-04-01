@@ -10,7 +10,7 @@ Group=__USER__
 WorkingDirectory=__REPO_ROOT__
 Environment=PYTHONUNBUFFERED=1
 Environment=HOME=/home/__USER__
-ExecStart=/bin/bash -lc 'source "__VENV_ROOT__/bin/activate" && exec python "__REPO_ROOT__/runtime/face_gallery_web_demo.py" --host 0.0.0.0 --port 5000 --capture-mode webcam --camera-id 0 --gallery-dir "__REPO_ROOT__/runtime/gallery" --model-pack buffalo_s --provider CPUExecutionProvider'
+ExecStart=/bin/bash -lc 'source "__VENV_ROOT__/bin/activate" && exec python "__REPO_ROOT__/runtime/face_gallery_web_demo.py" --host 0.0.0.0 --port 5000 --capture-mode webcam --camera-id 11 --gallery-dir "__REPO_ROOT__/runtime/gallery" --model-pack buffalo_s --provider CPUExecutionProvider'
 Restart=always
 RestartSec=3
 
