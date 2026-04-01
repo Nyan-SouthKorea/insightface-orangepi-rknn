@@ -1,0 +1,34 @@
+{
+  "onnx_path": "/home/ubuntu/.insightface/models/buffalo_l/w600k_r50.onnx",
+  "output_rknn_path": "/data2/iena/260401_InsightFace-RKNN/repo/conversion/results/model_zoo/rk3588/buffalo_l/w600k_r50_fp16.rknn",
+  "model_kind": "recognition",
+  "input_shape": [
+    1,
+    3,
+    112,
+    112
+  ],
+  "target_platform": "rk3588",
+  "dtype": "fp",
+  "dataset": null,
+  "inputs": [
+    "input.1"
+  ],
+  "outputs": null,
+  "mean_values": [
+    [
+      127.5,
+      127.5,
+      127.5
+    ]
+  ],
+  "std_values": [
+    [
+      127.5,
+      127.5,
+      127.5
+    ]
+  ],
+  "float_dtype": "float16",
+  "optimization_level": 3
+}

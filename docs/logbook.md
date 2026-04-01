@@ -24,6 +24,8 @@
 - `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 host `FP16 RKNN export`는 성공했다.
 - OrangePI에서 `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 `RKNN Lite2` 파일 입력 smoke도 성공했다.
 - OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
+- `buffalo_s`의 얼굴 인식 핵심 두 ONNX(`det_500m`, `w600k_mbf`)는 현재 host 기준으로 `buffalo_sc`와 SHA256이 완전히 같다.
+- 따라서 현재 face-only 범위의 실제 RKNN 변환 대상은 `buffalo_sc`, `buffalo_m`, `buffalo_l` 세 pack으로 본다.
 - 아직 확정되지 않은 항목은 RKNN smoke 기준값, 새 web demo 기술 스택, 최종 model zoo metadata 형식이다.
 - 아직 없는 항목은 새 web demo front / back 코드와 나머지 model pack의 RKNN full 변환 결과다.
 
@@ -48,6 +50,8 @@
 - OrangePI `RKNN Lite2` 환경은 현재 `opencv-python-headless 4.10.0.84`까지 포함해야 smoke script가 바로 돈다.
 - 현재 OrangePI의 `librknnrt`는 `2.1.0`, driver는 `0.9.6`으로 보이며, exported model의 toolkit `2.3.2`와 warning은 나지만 smoke 추론은 실제로 성공한다.
 - 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣어야 하고, 변환 시 넣은 `mean/std` 전처리를 runtime에서 다시 하지 않는다.
+- `buffalo_s`는 현재 face-only 주경로에서 `buffalo_sc`의 alias pack으로 취급하고, 별도 변환보다 metadata alias와 보조 모델 여부를 나눠 관리한다.
+- 나머지 실제 RKNN 변환 순서는 `buffalo_m` 다음 `buffalo_l`로 둔다.
 - 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
 - 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
 - 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 운영 인터페이스`다.
@@ -123,7 +127,9 @@
   - [x] `buffalo_sc` 실기기 추론 성공
   - [x] 성공 절차 문서화
   - [x] 첫 RKNN wrapper 표면을 `FaceWrapper`에 연결
-  - [ ] 나머지 모델팩 full 변환 계획 확정
+  - [x] 나머지 모델팩 full 변환 계획 확정
+  - [ ] `buffalo_m` RKNN smoke 변환과 실기기 smoke
+  - [ ] `buffalo_l` RKNN smoke 변환과 실기기 smoke
   - [ ] 나머지 model pack을 RKNN wrapper 표면에 연결
   - [ ] 새 web demo front / back 구조 설계
   - [ ] 새 web demo의 모델 전환 UI 구현
@@ -167,3 +173,5 @@
 - 2026-04-01: RKNN detector 점수가 비정상적으로 낮은 원인이 `float32 NCHW` 이중 전처리였음을 확인했고, `raw RGB uint8 NHWC` 입력으로 고쳤다.
 - 2026-04-01: NHWC 전환 뒤 detector grid shape 계산이 깨진 부분을 `self.input_height`, `self.input_width` 기준으로 고쳤다.
 - 2026-04-01: OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")`로 gallery 1명 file-input end-to-end를 다시 검증했고 `gallery_count 1`, `TestUser`, `similarity 1.0`, `det_score 0.6806640625`를 확인했다.
+- 2026-04-01: host 기준 `buffalo_s det_500m`, `buffalo_s w600k_mbf`의 SHA256이 `buffalo_sc`와 동일함을 확인했고, face-only 범위에서는 `buffalo_s`를 alias pack으로 취급하기로 했다.
+- 2026-04-01: `buffalo_m` 다운로드 중 zip 구조가 `buffalo_m/buffalo_m/*.onnx`로 한 단계 더 중첩되는 것을 확인했고, 이후 변환 스크립트는 nested pack 경로도 허용하도록 보강하기로 했다.

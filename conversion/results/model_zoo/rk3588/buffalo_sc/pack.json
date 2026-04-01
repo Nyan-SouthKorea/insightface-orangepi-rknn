@@ -1,0 +1,104 @@
+{
+  "model_pack": "buffalo_sc",
+  "target_platform": "rk3588",
+  "dtype": "fp",
+  "source_pack_dir": "/home/ubuntu/.insightface/models/buffalo_sc",
+  "models": {
+    "detector": {
+      "onnx_filename": "det_500m.onnx",
+      "onnx_path": "/home/ubuntu/.insightface/models/buffalo_sc/det_500m.onnx",
+      "output_filename": "det_500m_fp16.rknn",
+      "output_rknn_path": "/data2/iena/260401_InsightFace-RKNN/repo/conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn",
+      "metadata_filename": "det_500m_fp16.json",
+      "model_kind": "detection",
+      "input_shape": [
+        1,
+        3,
+        640,
+        640
+      ],
+      "metadata": {
+        "onnx_path": "/home/ubuntu/.insightface/models/buffalo_sc/det_500m.onnx",
+        "output_rknn_path": "/data2/iena/260401_InsightFace-RKNN/repo/conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn",
+        "model_kind": "detection",
+        "input_shape": [
+          1,
+          3,
+          640,
+          640
+        ],
+        "target_platform": "rk3588",
+        "dtype": "fp",
+        "dataset": null,
+        "inputs": [
+          "input.1"
+        ],
+        "outputs": null,
+        "mean_values": [
+          [
+            127.5,
+            127.5,
+            127.5
+          ]
+        ],
+        "std_values": [
+          [
+            128.0,
+            128.0,
+            128.0
+          ]
+        ],
+        "float_dtype": "float16",
+        "optimization_level": 3
+      }
+    },
+    "recognizer": {
+      "onnx_filename": "w600k_mbf.onnx",
+      "onnx_path": "/home/ubuntu/.insightface/models/buffalo_sc/w600k_mbf.onnx",
+      "output_filename": "w600k_mbf_fp16.rknn",
+      "output_rknn_path": "/data2/iena/260401_InsightFace-RKNN/repo/conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn",
+      "metadata_filename": "w600k_mbf_fp16.json",
+      "model_kind": "recognition",
+      "input_shape": [
+        1,
+        3,
+        112,
+        112
+      ],
+      "metadata": {
+        "onnx_path": "/home/ubuntu/.insightface/models/buffalo_sc/w600k_mbf.onnx",
+        "output_rknn_path": "/data2/iena/260401_InsightFace-RKNN/repo/conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn",
+        "model_kind": "recognition",
+        "input_shape": [
+          1,
+          3,
+          112,
+          112
+        ],
+        "target_platform": "rk3588",
+        "dtype": "fp",
+        "dataset": null,
+        "inputs": [
+          "input.1"
+        ],
+        "outputs": null,
+        "mean_values": [
+          [
+            127.5,
+            127.5,
+            127.5
+          ]
+        ],
+        "std_values": [
+          [
+            127.5,
+            127.5,
+            127.5
+          ]
+        ],
+        "float_dtype": "float16",
+        "optimization_level": 3
+      }
+    }
+  }
+}

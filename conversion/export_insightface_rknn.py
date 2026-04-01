@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import onnx
 from rknn.api import RKNN
@@ -105,29 +106,39 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
-    args = build_parser().parse_args()
-    onnx_path = Path(args.onnx_path).expanduser().resolve()
-    output_path = Path(args.output_rknn_path).resolve()
+def export_single_model(
+    onnx_path: str | Path,
+    output_rknn_path: str | Path,
+    model_kind: str,
+    input_shape: list[int],
+    target_platform: str = "rk3588",
+    dtype: str = "fp",
+    dataset: str | None = None,
+    inputs: list[str] | None = None,
+    outputs: list[str] | None = None,
+    float_dtype: str = "float16",
+    optimization_level: int = 3,
+    verbose: bool = False,
+) -> dict[str, Any]:
+    onnx_path = Path(onnx_path).expanduser().resolve()
+    output_path = Path(output_rknn_path).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if args.dtype != "fp" and not args.dataset:
+    if dtype != "fp" and not dataset:
         raise ValueError("양자화 변환에는 --dataset 이 필요합니다.")
 
-    preset = MODEL_PRESETS[args.model_kind]
-    input_shape = parse_csv_ints(args.input_shape)
-    inputs = auto_inputs_for_dynamic_model(onnx_path, parse_csv_names(args.inputs))
-    outputs = parse_csv_names(args.outputs)
+    preset = MODEL_PRESETS[model_kind]
+    inputs = auto_inputs_for_dynamic_model(onnx_path, inputs)
 
-    rknn = RKNN(verbose=args.verbose)
+    rknn = RKNN(verbose=verbose)
     try:
         print("--> config")
         ret = rknn.config(
             mean_values=preset["mean_values"],
             std_values=preset["std_values"],
-            target_platform=args.target_platform,
-            float_dtype=args.float_dtype,
-            optimization_level=args.optimization_level,
+            target_platform=target_platform,
+            float_dtype=float_dtype,
+            optimization_level=optimization_level,
         )
         if ret != 0:
             raise RuntimeError(f"rknn.config 실패: {ret}")
@@ -144,8 +155,8 @@ def main() -> None:
 
         print("--> build")
         ret = rknn.build(
-            do_quantization=(args.dtype != "fp"),
-            dataset=args.dataset,
+            do_quantization=(dtype != "fp"),
+            dataset=dataset,
         )
         if ret != 0:
             raise RuntimeError(f"rknn.build 실패: {ret}")
@@ -160,23 +171,42 @@ def main() -> None:
     metadata = {
         "onnx_path": str(onnx_path),
         "output_rknn_path": str(output_path),
-        "model_kind": args.model_kind,
+        "model_kind": model_kind,
         "input_shape": input_shape,
-        "target_platform": args.target_platform,
-        "dtype": args.dtype,
-        "dataset": args.dataset,
+        "target_platform": target_platform,
+        "dtype": dtype,
+        "dataset": dataset,
         "inputs": inputs,
         "outputs": outputs,
         "mean_values": preset["mean_values"],
         "std_values": preset["std_values"],
-        "float_dtype": args.float_dtype,
-        "optimization_level": args.optimization_level,
+        "float_dtype": float_dtype,
+        "optimization_level": optimization_level,
     }
     metadata_path = output_path.with_suffix(".json")
     metadata_path.write_text(json.dumps(metadata, indent=2, ensure_ascii=False))
 
     print("done:", output_path)
     print("metadata:", metadata_path)
+    return metadata
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    export_single_model(
+        onnx_path=args.onnx_path,
+        output_rknn_path=args.output_rknn_path,
+        model_kind=args.model_kind,
+        input_shape=parse_csv_ints(args.input_shape),
+        target_platform=args.target_platform,
+        dtype=args.dtype,
+        dataset=args.dataset,
+        inputs=parse_csv_names(args.inputs),
+        outputs=parse_csv_names(args.outputs),
+        float_dtype=args.float_dtype,
+        optimization_level=args.optimization_level,
+        verbose=args.verbose,
+    )
 
 
 if __name__ == "__main__":

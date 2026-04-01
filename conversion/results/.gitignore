@@ -1,3 +1,5 @@
 *
 !.gitignore
 !README.local.md
+!model_zoo/
+!model_zoo/**

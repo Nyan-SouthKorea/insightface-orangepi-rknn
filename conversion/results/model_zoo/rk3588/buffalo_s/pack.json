@@ -1,0 +1,13 @@
+{
+  "model_pack": "buffalo_s",
+  "target_platform": "rk3588",
+  "dtype": "fp",
+  "alias_of": "buffalo_sc",
+  "face_only_alias": true,
+  "note": "face-only 기준 det_500m, w600k_mbf는 buffalo_sc와 동일 SHA256",
+  "auxiliary_onnx": [
+    "1k3d68.onnx",
+    "2d106det.onnx",
+    "genderage.onnx"
+  ]
+}
