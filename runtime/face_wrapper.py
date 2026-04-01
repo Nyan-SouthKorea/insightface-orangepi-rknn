@@ -8,9 +8,13 @@ print(type(wrapper.recognizer).__name__)
 PY
 
 Full:
-  python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode webcam --camera-source /dev/video21 --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --backend onnx --provider CPUExecutionProvider
+  python runtime/web_backend/main.py --host 0.0.0.0 --port 5000 \
+    --capture-mode webcam \
+    --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
+    --gallery-dir runtime/gallery \
+    --model-pack buffalo_m \
+    --backend rknn \
+    --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
   - `gallery_dir`: local gallery folder
@@ -48,8 +52,8 @@ class FaceWrapper:
     def __init__(
         self,
         gallery_dir: str,
-        model_pack: str = "buffalo_s",
-        backend: str = "onnx",
+        model_pack: str = "buffalo_m",
+        backend: str = "rknn",
         provider: str = "CPUExecutionProvider",
         threshold: float = 0.7,
         det_size: int = 640,

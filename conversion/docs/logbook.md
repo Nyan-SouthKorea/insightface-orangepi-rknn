@@ -20,6 +20,7 @@
 - `buffalo_m` pack은 zip 내부가 `buffalo_m/buffalo_m/*.onnx` 중첩 구조라서 pack 경로 정규화가 필요하다.
 - `conversion/export_insightface_pack_rknn.py`로 pack-level export와 `pack.json` manifest 생성까지 묶었다.
 - canonical `RKNN model zoo`는 현재 tracked repo의 `conversion/results/model_zoo/rk3588/` 아래에 유지한다.
+- `conversion/README.md`에는 다른 사람이 그대로 따라 할 수 있는 host 변환 순서와 OrangePI smoke 절차를 정리했다.
 - 아직 정하지 않은 항목은 `INT8` calibration 입력 묶음, canonical model zoo metadata 형식, 나머지 모델팩 확장 순서다.
 
 ## 현재 모듈 결정
@@ -83,3 +84,4 @@
 - 2026-04-01: `export_insightface_pack_rknn.py`를 추가해 `buffalo_sc`, `buffalo_m`, `buffalo_l`의 pack-level export와 `buffalo_s` alias manifest 생성을 같은 entry로 묶었다.
 - 2026-04-01: canonical `RKNN model zoo`를 tracked repo 아래에 두도록 `conversion/results/.gitignore`를 조정했고, host push 뒤 OrangePI pull 흐름으로 pack 배치를 닫았다.
 - 2026-04-01: host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN` export를 성공했고, OrangePI wrapper smoke까지 연결해 pack-level 변환 경로를 닫았다.
+- 2026-04-01: `conversion/README.md`를 host 환경 준비, pack export, OrangePI probe, SDK smoke까지 따라 할 수 있는 매뉴얼 형태로 다시 정리했다.

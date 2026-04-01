@@ -358,6 +358,11 @@ class LiveRuntimeManager:
             return 0.0
         return 0.0
 
+    def status_provider_name(self) -> str:
+        if self.args.backend == "rknn":
+            return "RKNNLite"
+        return self.args.provider
+
     def describe_runtime(self) -> dict:
         with self.sdk_lock:
             sdk_info = {} if self.sdk is None else self.sdk.describe()
@@ -368,7 +373,7 @@ class LiveRuntimeManager:
 
         return {
             "backend": self.args.backend,
-            "provider": self.args.provider,
+            "provider": self.status_provider_name(),
             "capture_mode": self.args.capture_mode,
             "camera_source": self.camera_source,
             "model_pack": self.current_model_pack,

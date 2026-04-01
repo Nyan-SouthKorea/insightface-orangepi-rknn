@@ -1,22 +1,26 @@
 """Gallery-based face recognition using InsightFace on ONNX Runtime.
 
 Smoke:
-  python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode webcam --camera-id 0 --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --provider CPUExecutionProvider
+  python runtime/benchmark_insightface_cpu.py \
+    --image-path runtime/results/face_benchmark_input.jpg \
+    --model-packs buffalo_sc \
+    --repeat 1 --warmup 1 \
+    --provider CPUExecutionProvider
 
 Full:
-  python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode json --json-path cam_info.json --cam-key camera1 \
-    --image-dir cam_images --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --provider CPUExecutionProvider
+  python runtime/benchmark_insightface_cpu.py \
+    --image-path runtime/results/face_benchmark_input.jpg \
+    --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_l \
+    --repeat 20 --warmup 5 \
+    --provider CPUExecutionProvider \
+    --output-json runtime/results/ort_cpu_benchmark/summary.json
 
 Main inputs:
   - `runtime/gallery/`: user folders with face images
-  - camera frames or JSON image frames from the entry script
+  - camera frames or benchmark image input from the entry script
 
 Main outputs:
-  - recognition results for the web demo overlay
+  - recognition results for CPU benchmark or fallback runtime
 """
 
 from __future__ import annotations

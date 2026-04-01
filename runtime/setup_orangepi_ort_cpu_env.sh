@@ -7,8 +7,12 @@ set -euo pipefail
 #
 # Full:
 #   bash runtime/setup_orangepi_ort_cpu_env.sh
-#   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-#     --capture-mode webcam --camera-source /dev/video21
+#   ../envs/ifr_ort_cpu_probe/bin/python runtime/benchmark_insightface_cpu.py \
+#     --image-path runtime/results/face_benchmark_input.jpg \
+#     --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_l \
+#     --repeat 20 --warmup 5 \
+#     --provider CPUExecutionProvider \
+#     --output-json runtime/results/ort_cpu_benchmark/summary.json
 #
 # Inputs:
 #   - repo/runtime/requirements_ort_cpu_probe.txt

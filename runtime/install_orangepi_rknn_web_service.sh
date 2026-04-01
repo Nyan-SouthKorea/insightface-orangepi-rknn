@@ -22,6 +22,7 @@ VENV_ROOT="${WORK_ROOT}/envs/ifr_rknn_lite2_cp310"
 SERVICE_TEMPLATE="${REPO_ROOT}/runtime/insightface_rknn_web.service.template"
 SERVICE_OUTPUT="/tmp/insightface_gallery_web.service"
 SYSTEMD_TARGET="/etc/systemd/system/insightface_gallery_web.service"
+SERVICE_USER="${SUDO_USER:-${USER}}"
 DEFAULT_CAMERA_SOURCE=""
 
 if [[ -d /dev/v4l/by-id ]]; then
@@ -50,7 +51,7 @@ if [[ ! -x "${VENV_ROOT}/bin/python" ]]; then
 fi
 
 sed \
-  -e "s|__USER__|${USER}|g" \
+  -e "s|__USER__|${SERVICE_USER}|g" \
   -e "s|__REPO_ROOT__|${REPO_ROOT}|g" \
   -e "s|__VENV_ROOT__|${VENV_ROOT}|g" \
   -e "s|__CAMERA_SOURCE__|${CAMERA_SOURCE}|g" \

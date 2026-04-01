@@ -10,27 +10,26 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `1차 RKNN 변환 성공 -> SDK화 -> 새 web demo` 큰 실행의 시작 단계다.
+- 현재 단계는 `RKNN SDK + 새 web console 구현 -> 기존 5000 service 교체` 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
-- 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web demo`를 분리하는 구조로 고정했다.
+- 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web console`을 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
-- 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
-- 현재 `OrangePI` 서비스는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
-- 현재 OrangePI live status 기준 웹 데모는 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0` 상태로 응답한다.
-- 첫 번째 RKNN 타깃은 `buffalo_sc`로 잠정 확정했다.
 - host RKNN 변환 환경은 `../envs/ifr_rknn_host_cp310`, OrangePI RKNN Lite2 환경은 `../envs/ifr_rknn_lite2_cp310`으로 잡았다.
-- `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 host `FP16 RKNN export`는 성공했다.
-- OrangePI에서 `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 `RKNN Lite2` 파일 입력 smoke도 성공했다.
-- OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
-- `buffalo_s`의 얼굴 인식 핵심 두 ONNX(`det_500m`, `w600k_mbf`)는 현재 host 기준으로 `buffalo_sc`와 SHA256이 완전히 같다.
-- 따라서 현재 face-only 범위의 실제 RKNN 변환 대상은 `buffalo_sc`, `buffalo_m`, `buffalo_l` 세 pack으로 본다.
-- host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN export`와 `pack.json` manifest까지 만들었다.
-- OrangePI에서 `FaceWrapper(backend="rknn")` 기준 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`도 gallery 1명 file-input end-to-end를 통과했다.
-- local SDK 표면으로 `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 추가했다.
-- 아직 확정되지 않은 항목은 RKNN smoke 기준값, 새 web demo 기술 스택, 최종 model zoo metadata 형식이다.
-- 아직 없는 항목은 새 web demo front / back 코드와 SDK형 상위 구조 정리다.
+- face-only 기준 canonical `RKNN model zoo`는 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 네 이름으로 정리했다.
+- 현재 기본 runtime pack은 `buffalo_m`로 둔다.
+- 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
+- 현재 `OrangePI` 서비스와 수동 smoke는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
+- local SDK 표면으로 `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 유지한다.
+- local 기준 새 web console은 `runtime/web_backend/main.py`와 `runtime/web_frontend/` 조합으로 구현했다.
+- 새 web console backend는 `FastAPI`, frontend는 `React + Vite`로 고정했다.
+- 새 web console backend는 `모델 전환`, `메모리 정리`, `gallery 등록`, `촬영 저장`, `다중 업로드`, `삭제`, `MJPEG 스트리밍`, `상태 API`를 지원한다.
+- OrangePI 수동 smoke에서 `5050` 포트로 새 web console을 실제 카메라와 함께 검증했다.
+- 수동 smoke 기준 모델 전환은 `buffalo_sc -> buffalo_m -> buffalo_l -> buffalo_m` 순서에서 예외 없이 통과했고, 메모리 사용량도 전환 결과에 맞춰 갱신됐다.
+- 수동 smoke 기준 gallery API는 `인물 생성 -> 현재 프레임 저장 -> 업로드 -> 삭제`를 실제로 통과했다.
+- old CPU demo source와 old service 설치 스크립트는 더 이상 canonical 경로가 아니므로 삭제 대상으로 정리했고, local repo에서는 이미 제거했다.
+- 현재 남은 큰 일은 새 web console을 `5000` service로 교체하고, 그 결과를 canonical logbook에 닫는 것이다.
 
 ## 현재 전역 결정
 
@@ -58,12 +57,13 @@
 - canonical `RKNN model zoo`는 현재 tracked repo의 `conversion/results/model_zoo/rk3588/` 아래에 두고, OrangePI는 `git pull`로 같은 pack을 받는다.
 - `conversion/results/model_zoo/<platform>/<pack>/pack.json`은 runtime이 읽는 canonical pack manifest다.
 - `runtime.FaceSDK`는 현재 `FaceWrapper` 위의 안정된 import 이름이고, `list_model_packs()`로 future web demo backend가 pack 목록을 바로 읽게 한다.
-- 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
-- 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
+- 현재 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 web console`로 고정한다.
+- 현재 canonical service 대상은 `runtime/web_backend/main.py`와 `runtime/install_orangepi_rknn_web_service.sh` 조합이다.
 - 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 운영 인터페이스`다.
-- 현재 웹 데모는 `capture thread`, `inference thread`, `render thread`를 분리해 스트리밍 끊김을 줄이는 구조로 유지한다.
-- 최종 web demo는 `front / back`을 분리하고, 실시간 FPS와 상태는 웹 화면에서 그린다.
-- 최종 web demo는 `모델 전환`, `gallery 등록`, `다중 이미지 추가`, `삭제`, `촬영 저장`을 지원해야 한다.
+- 현재 web console은 `front / back`을 분리하고, 실시간 FPS와 상태는 웹 화면에서 그린다.
+- 현재 web console은 `모델 전환`, `gallery 등록`, `다중 이미지 추가`, `삭제`, `촬영 저장`을 지원한다.
+- gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`를 기본으로 한다.
+- old CPU demo source, old service template, old service install 스크립트는 새 service cutover가 끝나면 canonical 경로에서 제거한다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 - 아직 `tools/directory_inventory.py`가 없으므로, 초기 부트스트랩 단계에서는 `find`와 `rg --files` 기반의 shallow inventory로 대신하고 그 사실을 logbook에 남긴다.
 - 아직 `tools/logbook_archive_guard.py`가 없으므로, 초기 단계에서는 줄 수를 수동으로 확인한다.
@@ -150,11 +150,12 @@
   - [x] `buffalo_l` RKNN smoke 변환과 실기기 smoke
   - [x] 나머지 model pack을 RKNN wrapper 표면에 연결
   - [x] `RKNN face SDK` 상위 package 구조 설계
-  - [ ] 새 web demo back API 초안 작성
-  - [ ] 새 web demo front / back 구조 설계
-  - [ ] 새 web demo의 모델 전환 UI 구현
-  - [ ] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
-  - [ ] 최종 service 정리와 전체 문서 마감
+  - [x] 새 web demo back API 초안 작성
+  - [x] 새 web demo front / back 구조 설계
+  - [x] 새 web demo의 모델 전환 UI 구현
+  - [x] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
+  - [ ] 기존 5000 service를 새 web console로 교체
+  - [ ] old CPU demo 흔적 삭제와 전체 문서 마감
 
 ## Recent Logs
 
@@ -200,3 +201,9 @@
 - 2026-04-01: host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN` export를 성공했고, OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 모두 `FaceWrapper(backend="rknn")` 기준 gallery 1명 file-input end-to-end를 통과했다.
 - 2026-04-01: `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 추가해 SDK-style import 이름과 model pack inventory 표면을 만들었다.
 - 2026-04-01: OrangePI에서 `from runtime import FaceSDK` import, `FaceSDK.list_model_packs()`, `FaceSDK(...).describe()`, `infer()`까지 다시 확인했고 `buffalo_s -> buffalo_sc` alias 해석과 `TestUser` 결과를 재검증했다.
+- 2026-04-01: `runtime/web_backend/`에 `FastAPI` backend, `runtime/web_frontend/`에 `React + Vite` frontend를 추가해 새 web console 구조를 만들었다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 `capture_fps`, `inference_fps`, `stream_fps`, `latest_results`를 반환하는 것을 확인했다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 `buffalo_sc -> buffalo_m -> buffalo_l -> buffalo_m` 모델 전환을 다시 수행했고, 메모리 값과 최근 결과가 함께 갱신되는 것을 확인했다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 `인물 생성 -> 현재 프레임 저장 -> 다중 업로드 -> 삭제` gallery API를 실제로 통과했다.
+- 2026-04-01: 새 service 설치 스크립트가 `sudo` 실행 시 `root` 사용자로 service를 생성할 수 있는 문제를 발견했고, `SUDO_USER` 기준으로 보정했다.
+- 2026-04-01: old CPU demo 파일 `runtime/face_gallery_web_demo.py`, `runtime/install_orangepi_service.sh`, `runtime/insightface_gallery_web.service.template`는 더 이상 canonical 경로가 아니라고 판단해 삭제 대상으로 전환했다.

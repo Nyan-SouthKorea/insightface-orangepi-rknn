@@ -9,27 +9,23 @@
 
 ## 현재 모듈 스냅샷
 
-- `face-only` 웹 데모와 CPU 검증용 `ONNX Runtime` 환경은 1차 smoke를 통과했다.
-- OrangePI에서 `insightface_gallery_web.service` 기동과 LAN 접속은 확인했다.
-- 웹 데모는 현재 `capture`, `inference`, `render` 루프를 분리한 구조로 갱신했다.
-- overlay에는 `capture_fps`, `infer_fps`, `stream_fps`를 함께 표시한다.
-- 앱 코드가 import하는 표면은 `runtime.face_wrapper.FaceWrapper`로 유지한다.
-- 현재 목적은 첫 번째 RKNN 경로를 붙인 뒤, 같은 표면을 `RKNN face SDK`로 승격하고, 새 `front / back` 분리형 web demo를 만드는 것이다.
-- 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
-- RKNN Lite2 실기기 venv 이름은 `../envs/ifr_rknn_lite2_cp310`로 고정했다.
-- 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이고, 장치 번호는 현재 `/dev/video21`이다.
-- 현재 live status 기준 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0`, `last_error=""`를 확인했다.
-- `runtime/probe_rknn_lite2.py`를 추가했고, 다음 단계는 host에서 만든 `buffalo_sc` RKNN 산출물을 OrangePI에서 smoke하는 것이다.
-- OrangePI에서 `buffalo_sc det_500m_fp16.rknn`, `buffalo_sc w600k_mbf_fp16.rknn` 파일 입력 smoke는 실제로 성공했다.
-- OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
-- OrangePI에서 `FaceWrapper(backend="rknn")` 기준 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`도 gallery 1명 file-input end-to-end를 통과했다.
+- 현재 canonical runtime 방향은 `RKNN face SDK + FastAPI backend + React frontend`다.
+- 앱 코드가 import하는 표면은 `runtime.FaceSDK`, `runtime.face_wrapper.FaceWrapper`로 유지한다.
+- CPU 검증용 `ONNX Runtime` 환경은 benchmark 전용으로 남기고, 실시간 service 주경로는 `RKNN Lite2`로 고정한다.
+- 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`, `../envs/ifr_rknn_lite2_cp310`로 고정했다.
+- 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
+- 새 web console backend는 `runtime/web_backend/main.py`, frontend는 `runtime/web_frontend/`다.
+- 새 web console은 모델 전환, gallery 등록, 촬영 저장, 업로드, 삭제, 실시간 FPS, 메모리 표시를 지원한다.
+- OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 동작하는 것을 확인했다.
+- OrangePI `5050` 수동 smoke에서 `buffalo_sc`, `buffalo_m`, `buffalo_l` 전환과 메모리 정리가 정상 동작함을 확인했다.
+- OrangePI `5050` 수동 smoke에서 gallery API의 생성, 촬영 저장, 업로드, 삭제를 확인했다.
+- old CPU demo source와 old service 설치 스크립트는 더 이상 canonical 경로가 아니다.
 
 ## 현재 모듈 결정
 
 - 이 모듈은 실기기 실행과 성능 측정을 맡는다.
 - 원본 모델과 변환 로직은 `conversion/`이 맡는다.
 - 큰 산출물은 `runtime/results/` 아래에 둔다.
-- 현재 `face-only` 웹 데모는 CPU 검증 경로로 먼저 세운다.
 - `ONNX Runtime`은 검증용 CPU 경로로 두고, RK3588 NPU 실시간 주경로는 이후 `RKNN`으로 옮긴다.
 - OrangePI 단건 RKNN smoke는 우선 `probe_rknn_lite2.py`와 파일 입력으로 닫는다.
 - 현재 OrangePI Lite2 smoke env는 `RKNNLite + opencv-python-headless 4.10.0.84` 조합으로 유지한다.
@@ -37,10 +33,12 @@
 - 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std`를 runtime에서 다시 적용하지 않는다.
 - `runtime/rknn_model_zoo.py`는 현재 `pack.json` manifest와 alias를 읽어 `buffalo_s -> buffalo_sc` 같은 pack 선택을 해석한다.
 - `runtime.FaceSDK`는 현재 앱 코드와 future backend API가 공용으로 쓰는 SDK-style import 이름이다.
-- gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
+- gallery 로컬 자산은 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*` 구조로 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
-- 최종 web demo는 `backend API`와 `frontend UI`를 분리한다.
+- 현재 web console은 `backend API`와 `frontend UI`를 분리한다.
+- 현재 기본 runtime pack은 `buffalo_m`다.
+- 현재 canonical service 설치 entry는 `runtime/install_orangepi_rknn_web_service.sh`다.
 
 ## 현재 CPU benchmark 상세
 
@@ -89,31 +87,24 @@
 ## 현재 활성 체크리스트
 
 - [x] `face-only` 얼굴 인식 모듈 초안 작성
-- [x] 웹 스트리밍 데모 entry script 작성
-- [x] gallery 로컬 폴더 규칙 정의
 - [x] CPU 검증용 requirements 파일 작성
-- [x] OrangePI용 venv 생성 스크립트 작성
-- [x] systemd 서비스 파일 작성
-- [x] OrangePI에서 venv 생성과 패키지 설치 smoke 수행
-- [x] OrangePI에서 서비스 기동과 네트워크 접속 smoke 수행
 - [x] buffalo model pack CPU benchmark 기록
-- [x] 웹 데모 스트리밍과 추론 루프 분리
-- [x] FPS 표시 추가
-- [x] 빨간색 상단 글씨 반영
-- [x] stable camera source 기반 service 설치 구조 반영
 - [x] OrangePI `RKNN Lite2` venv 생성 스크립트 작성
 - [x] RKNN runtime smoke entry script 초안 작성
 - [x] `buffalo_sc` RKNN backend 연결
 - [x] RKNN SDK 공용 표면 초안 작성
-- [ ] 새 web demo back 구조 설계
-- [ ] 새 web demo front 구조 설계
-- [ ] 모델 전환 UI 구현
-- [ ] gallery 등록 / 삭제 / 촬영 API 구현
-- [ ] gallery 등록 / 삭제 / 촬영 UI 구현
 - [x] wrapper API에 RKNN backend 선택 표면 추가
 - [x] 나머지 model pack을 wrapper 표면에 연결
 - [x] SDK 상위 package 구조 정리
-- [x] OrangePI `RKNN Lite2` smoke 성공
+- [x] 새 web demo back 구조 설계
+- [x] 새 web demo front 구조 설계
+- [x] 모델 전환 UI 구현
+- [x] gallery 등록 / 삭제 / 촬영 API 구현
+- [x] gallery 등록 / 삭제 / 촬영 UI 구현
+- [x] gallery 저장 구조를 `person_id/meta.json/images`로 정리
+- [x] OrangePI `5050` 수동 smoke 성공
+- [ ] 기존 `5000` service를 새 web console로 교체
+- [ ] old CPU demo 흔적 삭제와 문서 마감
 
 ## Recent Logs
 
@@ -145,3 +136,9 @@
 - 2026-04-01: OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`를 `FaceWrapper(backend="rknn")`로 다시 검증했고 모두 `TestUser`, `similarity 1.0`을 확인했다.
 - 2026-04-01: `FaceSDK`와 `list_model_packs()`를 추가해 future web demo backend가 runtime model zoo를 직접 읽을 수 있는 상위 표면을 만들었다.
 - 2026-04-01: OrangePI Lite2 env에서 `from runtime import FaceSDK`, `FaceSDK.list_model_packs()`, `describe()`, `infer()`까지 실제로 다시 확인했고 alias pack `buffalo_s -> buffalo_sc`와 `gallery_count 1` 상태가 기대대로 나왔다.
+- 2026-04-01: `runtime/web_backend/`에 `FastAPI` backend를, `runtime/web_frontend/`에 `React + Vite` frontend를 추가해 새 web console 구조를 만들었다.
+- 2026-04-01: `runtime/gallery_store.py`를 추가해 `person_id/meta.json/images` 기반 gallery 구조를 만들고, legacy 폴더 구조 읽기 호환도 유지했다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 FPS와 최근 결과를 갱신하는 것을 확인했다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 `buffalo_sc -> buffalo_m -> buffalo_l -> buffalo_m` 모델 전환과 메모리 정리가 정상 동작하는 것을 확인했다.
+- 2026-04-01: OrangePI `5050` 수동 smoke에서 `인물 생성 -> 현재 프레임 저장 -> 업로드 -> 삭제` gallery API를 실제로 통과했다.
+- 2026-04-01: 새 service 설치 스크립트는 `sudo` 실행 시 `SUDO_USER`를 따라가게 수정했고, old CPU demo 파일은 삭제 대상으로 전환했다.
