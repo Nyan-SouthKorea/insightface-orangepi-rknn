@@ -18,6 +18,7 @@
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
 - 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
 - 현재 `OrangePI` 서비스는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
+- 현재 OrangePI live status 기준 웹 데모는 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0` 상태로 응답한다.
 - 아직 확정되지 않은 항목은 첫 번째 RKNN 타깃 모델팩, 호스트 변환 환경 버전표, RKNN smoke 기준값이다.
 - 아직 없는 항목은 변환 스크립트, 인벤토리 스크립트, logbook archive 스크립트, RKNN 실기기 entry script다.
 
@@ -106,6 +107,7 @@
   - [x] OrangePI 고정 IP 설정
   - [x] 웹 데모 스트리밍과 추론 루프 분리
   - [x] 웹 데모 FPS 표시와 빨간색 상단 글씨 반영
+  - [x] stable camera source 기반 OrangePI service 재검증
   - [ ] 첫 번째 타깃 `InsightFace` 모델 조합 확정
   - [ ] 호스트 환경과 `OrangePI RK3588` 실기기 환경 표 작성
   - [ ] 변환 smoke 명령과 full 명령 초안 작성
@@ -136,3 +138,4 @@
 - 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 thread로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 바꿨다.
 - 2026-04-01: OrangePI LAN 연결을 `nmcli`로 manual 고정 IP로 전환해 재부팅 뒤에도 `192.168.20.238`을 유지하게 설정했다.
 - 2026-04-01: OrangePI CPU benchmark를 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack으로 측정했고, 현재 기준 균형점은 `buffalo_s`, 최대 경량 후보는 `buffalo_sc`로 우선 판단했다.
+- 2026-04-01: 최신 commit pull 뒤 `insightface_gallery_web.service`를 다시 설치했고, `camera-source=/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`, `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `last_error=""` 상태를 확인했다.

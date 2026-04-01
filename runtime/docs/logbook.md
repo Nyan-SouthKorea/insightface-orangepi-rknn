@@ -17,6 +17,7 @@
 - 현재 목적은 실제 gallery 이미지를 넣고, 선택할 모델팩을 CPU 기준표로 결정한 뒤, 같은 표면으로 RKNN backend를 붙이는 것이다.
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이고, 장치 번호는 현재 `/dev/video21`이다.
+- 현재 live status 기준 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0`, `last_error=""`를 확인했다.
 
 ## 현재 모듈 결정
 
@@ -79,3 +80,4 @@
 - 2026-04-01: OrangePI 재점검 결과 `V4L2 + /dev/video21`과 `/dev/v4l/by-id/...video-index0` 경로에서 읽기 성공을 확인했다.
 - 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 루프로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 수정했다.
 - 2026-04-01: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` CPU benchmark를 기록했고 현재 기준으로 `buffalo_s`와 `buffalo_sc`를 우선 비교 대상으로 본다.
+- 2026-04-01: 최신 commit을 OrangePI에 pull한 뒤 service를 다시 설치했고, `camera-source=/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0` 기준으로 `api/status`의 FPS 필드가 실제 값으로 갱신되는 것을 확인했다.
