@@ -23,12 +23,20 @@ Main outputs:
 
 from __future__ import annotations
 
-try:
-    from .face_gallery_recognizer import FaceGalleryRecognizer
-    from .rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
-except ImportError:
-    from face_gallery_recognizer import FaceGalleryRecognizer
-    from rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
+def load_onnx_recognizer():
+    try:
+        from .face_gallery_recognizer import FaceGalleryRecognizer
+    except ImportError:
+        from face_gallery_recognizer import FaceGalleryRecognizer
+    return FaceGalleryRecognizer
+
+
+def load_rknn_recognizer():
+    try:
+        from .rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
+    except ImportError:
+        from rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
+    return RknnFaceGalleryRecognizer
 
 
 class FaceWrapper:
@@ -46,6 +54,7 @@ class FaceWrapper:
     ):
         self.backend = backend
         if backend == "onnx":
+            FaceGalleryRecognizer = load_onnx_recognizer()
             self.recognizer = FaceGalleryRecognizer(
                 gallery_dir=gallery_dir,
                 model_pack=model_pack,
@@ -54,6 +63,7 @@ class FaceWrapper:
                 det_size=det_size,
             )
         elif backend == "rknn":
+            RknnFaceGalleryRecognizer = load_rknn_recognizer()
             self.recognizer = RknnFaceGalleryRecognizer(
                 gallery_dir=gallery_dir,
                 model_pack=model_pack,
