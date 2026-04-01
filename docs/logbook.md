@@ -199,3 +199,4 @@
 - 2026-04-01: canonical `RKNN model zoo`를 `conversion/results/model_zoo/` 아래 tracked 산출물로 열어, host push 뒤 OrangePI pull로 동일 pack을 받는 흐름을 닫았다.
 - 2026-04-01: host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN` export를 성공했고, OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 모두 `FaceWrapper(backend="rknn")` 기준 gallery 1명 file-input end-to-end를 통과했다.
 - 2026-04-01: `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 추가해 SDK-style import 이름과 model pack inventory 표면을 만들었다.
+- 2026-04-01: OrangePI에서 `from runtime import FaceSDK` import, `FaceSDK.list_model_packs()`, `FaceSDK(...).describe()`, `infer()`까지 다시 확인했고 `buffalo_s -> buffalo_sc` alias 해석과 `TestUser` 결과를 재검증했다.

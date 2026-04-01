@@ -144,3 +144,4 @@
 - 2026-04-01: `rknn_model_zoo.py`가 `pack.json`과 alias를 읽도록 보강했고, `buffalo_s`를 `buffalo_sc` alias로 해석하는 경로를 확인했다.
 - 2026-04-01: OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`를 `FaceWrapper(backend="rknn")`로 다시 검증했고 모두 `TestUser`, `similarity 1.0`을 확인했다.
 - 2026-04-01: `FaceSDK`와 `list_model_packs()`를 추가해 future web demo backend가 runtime model zoo를 직접 읽을 수 있는 상위 표면을 만들었다.
+- 2026-04-01: OrangePI Lite2 env에서 `from runtime import FaceSDK`, `FaceSDK.list_model_packs()`, `describe()`, `infer()`까지 실제로 다시 확인했고 alias pack `buffalo_s -> buffalo_sc`와 `gallery_count 1` 상태가 기대대로 나왔다.
