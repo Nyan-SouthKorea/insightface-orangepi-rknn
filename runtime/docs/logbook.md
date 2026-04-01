@@ -19,7 +19,8 @@
 - OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 동작하는 것을 확인했다.
 - OrangePI `5050` 수동 smoke에서 `buffalo_sc`, `buffalo_m`, `buffalo_l` 전환과 메모리 정리가 정상 동작함을 확인했다.
 - OrangePI `5050` 수동 smoke에서 gallery API의 생성, 촬영 저장, 업로드, 삭제를 확인했다.
-- old CPU demo source와 old service 설치 스크립트는 더 이상 canonical 경로가 아니다.
+- OrangePI `5000` service는 현재 새 web console로 교체를 마쳤고, `RKNNLite`, `capture_fps 9.85`, `inference_fps 7.15`, `stream_fps 12.25`, `gallery_count 1` 상태를 확인했다.
+- old CPU demo source와 old service 설치 스크립트는 canonical repo에서 제거했다.
 
 ## 현재 모듈 결정
 
@@ -103,8 +104,8 @@
 - [x] gallery 등록 / 삭제 / 촬영 UI 구현
 - [x] gallery 저장 구조를 `person_id/meta.json/images`로 정리
 - [x] OrangePI `5050` 수동 smoke 성공
-- [ ] 기존 `5000` service를 새 web console로 교체
-- [ ] old CPU demo 흔적 삭제와 문서 마감
+- [x] 기존 `5000` service를 새 web console로 교체
+- [x] old CPU demo 흔적 삭제와 문서 마감
 
 ## Recent Logs
 
@@ -142,3 +143,6 @@
 - 2026-04-01: OrangePI `5050` 수동 smoke에서 `buffalo_sc -> buffalo_m -> buffalo_l -> buffalo_m` 모델 전환과 메모리 정리가 정상 동작하는 것을 확인했다.
 - 2026-04-01: OrangePI `5050` 수동 smoke에서 `인물 생성 -> 현재 프레임 저장 -> 업로드 -> 삭제` gallery API를 실제로 통과했다.
 - 2026-04-01: 새 service 설치 스크립트는 `sudo` 실행 시 `SUDO_USER`를 따라가게 수정했고, old CPU demo 파일은 삭제 대상으로 전환했다.
+- 2026-04-01: 새 service 설치 스크립트의 `/tmp` 고정 파일명 충돌을 `mktemp` 기반 임시 파일로 수정했다.
+- 2026-04-01: OrangePI가 최신 commit을 pull한 뒤 `insightface_gallery_web.service`를 새 `FastAPI + React` web console로 교체했고, `5000`에서 `runtime/web_backend/main.py`가 실제로 기동하는 것을 확인했다.
+- 2026-04-01: `http://192.168.20.238:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 검증했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.

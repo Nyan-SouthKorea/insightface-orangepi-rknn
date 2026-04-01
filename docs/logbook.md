@@ -10,7 +10,7 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `RKNN SDK + 새 web console 구현 -> 기존 5000 service 교체` 단계다.
+- 현재 단계는 `RKNN SDK + 새 web console service cutover 완료` 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
 - 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web console`을 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
@@ -29,7 +29,8 @@
 - 수동 smoke 기준 모델 전환은 `buffalo_sc -> buffalo_m -> buffalo_l -> buffalo_m` 순서에서 예외 없이 통과했고, 메모리 사용량도 전환 결과에 맞춰 갱신됐다.
 - 수동 smoke 기준 gallery API는 `인물 생성 -> 현재 프레임 저장 -> 업로드 -> 삭제`를 실제로 통과했다.
 - old CPU demo source와 old service 설치 스크립트는 더 이상 canonical 경로가 아니므로 삭제 대상으로 정리했고, local repo에서는 이미 제거했다.
-- 현재 남은 큰 일은 새 web console을 `5000` service로 교체하고, 그 결과를 canonical logbook에 닫는 것이다.
+- OrangePI `5000` service는 현재 `runtime/web_backend/main.py` 기준으로 교체를 마쳤고, `RKNNLite`, `capture_fps 9.85`, `inference_fps 7.15`, `stream_fps 12.25`, `gallery_count 1` 상태를 확인했다.
+- 현재 요청된 cutover 작업은 닫혔고, 다음 후보는 `INT8 calibration`, `SDK 추가 다듬기`, `UI 후속 개선`이다.
 
 ## 현재 전역 결정
 
@@ -63,7 +64,7 @@
 - 현재 web console은 `front / back`을 분리하고, 실시간 FPS와 상태는 웹 화면에서 그린다.
 - 현재 web console은 `모델 전환`, `gallery 등록`, `다중 이미지 추가`, `삭제`, `촬영 저장`을 지원한다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`를 기본으로 한다.
-- old CPU demo source, old service template, old service install 스크립트는 새 service cutover가 끝나면 canonical 경로에서 제거한다.
+- old CPU demo source, old service template, old service install 스크립트는 canonical repo에서 제거했다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 - 아직 `tools/directory_inventory.py`가 없으므로, 초기 부트스트랩 단계에서는 `find`와 `rg --files` 기반의 shallow inventory로 대신하고 그 사실을 logbook에 남긴다.
 - 아직 `tools/logbook_archive_guard.py`가 없으므로, 초기 단계에서는 줄 수를 수동으로 확인한다.
@@ -154,8 +155,8 @@
   - [x] 새 web demo front / back 구조 설계
   - [x] 새 web demo의 모델 전환 UI 구현
   - [x] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
-  - [ ] 기존 5000 service를 새 web console로 교체
-  - [ ] old CPU demo 흔적 삭제와 전체 문서 마감
+  - [x] 기존 5000 service를 새 web console로 교체
+  - [x] old CPU demo 흔적 삭제와 전체 문서 마감
 
 ## Recent Logs
 
@@ -207,3 +208,7 @@
 - 2026-04-01: OrangePI `5050` 수동 smoke에서 `인물 생성 -> 현재 프레임 저장 -> 다중 업로드 -> 삭제` gallery API를 실제로 통과했다.
 - 2026-04-01: 새 service 설치 스크립트가 `sudo` 실행 시 `root` 사용자로 service를 생성할 수 있는 문제를 발견했고, `SUDO_USER` 기준으로 보정했다.
 - 2026-04-01: old CPU demo 파일 `runtime/face_gallery_web_demo.py`, `runtime/install_orangepi_service.sh`, `runtime/insightface_gallery_web.service.template`는 더 이상 canonical 경로가 아니라고 판단해 삭제 대상으로 전환했다.
+- 2026-04-01: 새 service 설치 스크립트가 `/tmp/insightface_gallery_web.service` 고정 파일명 때문에 root 소유 파일과 충돌하는 문제를 확인했고, `mktemp` 기반 임시 파일로 수정했다.
+- 2026-04-01: OrangePI가 `00614a0`까지 pull한 뒤 `insightface_gallery_web.service`를 새 `FastAPI + React` web console로 교체했고, `5000`에서 `runtime/web_backend/main.py`가 실제로 기동하는 것을 확인했다.
+- 2026-04-01: `http://192.168.20.238:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 확인했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 모델 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
+- 2026-04-01: `5050` 수동 smoke 프로세스는 내렸고, 최종적으로 `5000`만 listen 중인 상태를 확인했다.
