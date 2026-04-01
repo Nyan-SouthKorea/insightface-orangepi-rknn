@@ -10,7 +10,7 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `face-only` 웹 데모와 CPU 검증용 런타임 구현 단계다.
+- 현재 단계는 `face-only` 웹 데모와 CPU 검증용 런타임 smoke 완료 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
@@ -121,3 +121,4 @@
 - 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`, `21`은 실패했고 `11`, `20`은 열렸다.
 - 2026-04-01: OrangePI read probe 결과 `11`은 프레임 읽기 실패, `20`은 프레임 읽기 성공이어서 서비스 템플릿 기본 카메라 번호를 `20`으로 조정했다.
 - 2026-04-01: 기존에 실행 중인 service는 unit 파일 변경 뒤 자동 재시작되지 않는 것을 확인했고, `install_orangepi_service.sh`를 `restart`까지 수행하도록 보강했다.
+- 2026-04-01: `camera-id 20` 기준 재설치 뒤 `api/status`에서 `last_error`가 비어 있고 `last_frame_time`이 갱신되는 것을 확인해, OrangePI CPU 웹 스트리밍 경로가 현재 기준으로 살아 있음을 확인했다.

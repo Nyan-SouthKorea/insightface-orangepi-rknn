@@ -12,7 +12,8 @@
 - `face-only` 웹 데모와 CPU 검증용 `ONNX Runtime` 환경 초안을 만들었다.
 - 로컬 `../envs/ifr_ort_cpu_probe` 생성과 `InsightFace` CPU 초기화 smoke는 통과했다.
 - 로컬 `http://127.0.0.1:5060/api/status` 응답 smoke는 통과했다.
-- 현재 목적은 이 초안을 `OrangePI RK3588`에서 실제로 설치하고 서비스로 띄우는 것이다.
+- `OrangePI RK3588`에서 service 설치, LAN 접근, 실제 프레임 시각 갱신까지 확인했다.
+- 현재 목적은 gallery 사용자 이미지를 넣고 실제 얼굴 인식 결과를 붙이는 것이다.
 - reference 저장소에서 가져올 최소 흐름은 `gallery 자동 로드 -> 웹캠 또는 JSON 입력 -> 실시간 얼굴 인식 -> 웹 스트리밍`이다.
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
 - 현재 `OrangePI` 실기기 read probe 기준 서비스 기본 카메라 번호는 `20`으로 둔다.
@@ -53,3 +54,4 @@
 - 2026-04-01: OrangePI 카메라 probe 결과 `0`, `21`은 실패했고 `11`, `20`은 열렸다.
 - 2026-04-01: OrangePI read probe 결과 `11`은 프레임 읽기 실패, `20`은 프레임 읽기 성공이어서 서비스 기본 카메라 번호를 `20`으로 조정했다.
 - 2026-04-01: 이미 떠 있는 service에 새 unit 파일을 다시 적용하려면 `enable --now`만으로는 부족하다는 점을 확인했고, 설치 스크립트를 `daemon-reload -> enable -> restart` 순서로 보강했다.
+- 2026-04-01: `camera-id 20` 재적용 뒤 `api/status`의 `last_error`가 비어 있고 `last_frame_time`이 갱신되는 것을 확인했다.
