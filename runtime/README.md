@@ -63,7 +63,7 @@
 - 현재 웹 데모는 `face-only` 경로만 유지하고 speaker 경로는 넣지 않는다.
 - 현재 첫 backend는 `ONNX Runtime CPUExecutionProvider`다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
-- 현재 `OrangePI` 서비스 템플릿의 기본 카메라 번호는 실기기 probe 기준 `11`로 둔다.
+- 현재 `OrangePI` 서비스 템플릿의 기본 카메라 번호는 실기기 read probe 기준 `20`으로 둔다.
 - 실기기 smoke는 카메라 입력보다 파일 입력 경로를 먼저 닫되, 웹 데모는 동일 entry script에서 `webcam/json` 둘 다 받는다.
 - benchmark는 최소 `지연 시간`과 `초당 처리 수`를 함께 기록한다.
 - 모델 변환 경계는 `conversion/`이 맡고, 이 모듈은 받은 산출물의 실행 안정성과 실시간성을 확인하는 데 집중한다.

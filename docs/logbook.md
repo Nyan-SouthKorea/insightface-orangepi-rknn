@@ -16,7 +16,7 @@
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
 - 아직 확정되지 않은 항목은 첫 번째 타깃 모델 조합, 호스트 환경 버전, 실기기 측정 기준값이다.
-- 현재 `OrangePI` 서비스 기본 카메라 장치 번호는 실기기 probe 기준 `11`로 둔다.
+- 현재 `OrangePI` 서비스 기본 카메라 장치 번호는 실기기 read probe 기준 `20`으로 둔다.
 - 아직 없는 항목은 변환 스크립트, 인벤토리 스크립트, logbook archive 스크립트, RKNN 실기기 entry script다.
 
 ## 현재 전역 결정
@@ -118,5 +118,6 @@
 - 2026-04-01: `wc -l` 재확인 결과 active logbook 줄 수는 `116`, `49`로 archive 기준 `1000`에 한참 못 미쳐 이번 턴 archive는 만들지 않았다.
 - 2026-04-01: OrangePI에서 `python3.10-venv`를 설치한 뒤 `../envs/ifr_ort_cpu_probe` 생성과 `onnxruntime 1.23.2` CPU provider 초기화를 확인했다.
 - 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://192.168.20.238:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
-- 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`은 실패했고 `11`, `20`이 열렸으므로 서비스 템플릿 기본 카메라 번호를 `11`로 조정했다.
+- 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`, `21`은 실패했고 `11`, `20`은 열렸다.
+- 2026-04-01: OrangePI read probe 결과 `11`은 프레임 읽기 실패, `20`은 프레임 읽기 성공이어서 서비스 템플릿 기본 카메라 번호를 `20`으로 조정했다.
 - 2026-04-01: 기존에 실행 중인 service는 unit 파일 변경 뒤 자동 재시작되지 않는 것을 확인했고, `install_orangepi_service.sh`를 `restart`까지 수행하도록 보강했다.
