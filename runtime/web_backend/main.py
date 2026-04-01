@@ -7,7 +7,8 @@ Smoke:
     --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
     --gallery-dir runtime/gallery \
     --model-pack buffalo_m \
-    --backend rknn
+    --backend rknn \
+    --inference-fps 0
 
 Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
@@ -17,6 +18,7 @@ Full:
     --gallery-dir runtime/gallery \
     --model-pack buffalo_m \
     --backend rknn \
+    --inference-fps 0 \
     --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
@@ -63,8 +65,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--det-size", type=int, default=640)
-    parser.add_argument("--inference-fps", type=int, default=12)
-    parser.add_argument("--stream-fps", type=int, default=15)
+    parser.add_argument("--inference-fps", type=int, default=0)
+    parser.add_argument("--stream-fps", type=int, default=20)
+    parser.add_argument("--live-state-fps", type=int, default=12)
     parser.add_argument("--model-zoo-root", default="conversion/results/model_zoo")
     parser.add_argument("--target-platform", default="rk3588")
     parser.add_argument("--frontend-dist", default="runtime/web_frontend/dist")

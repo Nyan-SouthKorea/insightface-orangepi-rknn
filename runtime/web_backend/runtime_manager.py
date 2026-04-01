@@ -38,6 +38,7 @@ class LiveRuntimeManager:
         self.latest_raw_frame = None
         self.last_results = []
         self.last_frame_time = ""
+        self.last_result_time = ""
         self.last_error = ""
         self.capture_fps = 0.0
         self.inference_fps = 0.0
@@ -45,6 +46,11 @@ class LiveRuntimeManager:
         self.frame_width = 0
         self.frame_height = 0
         self.last_result_count = 0
+        self.capture_revision = 0
+        self.result_revision = 0
+        self.last_inference_duration_ms = 0.0
+        self.avg_inference_duration_ms = 0.0
+        self.max_inference_fps = max(0, int(args.inference_fps))
 
         self.current_model_pack = args.model_pack
         self.switch_in_progress = False
@@ -84,9 +90,12 @@ class LiveRuntimeManager:
         gc.collect()
 
     def _load_initial_sdk(self):
-        self.sdk = FaceSDK(
+        self.sdk = self._build_sdk(self.current_model_pack)
+
+    def _build_sdk(self, model_pack: str):
+        return FaceSDK(
             gallery_dir=str(self.gallery_dir),
-            model_pack=self.current_model_pack,
+            model_pack=model_pack,
             backend=self.args.backend,
             provider=self.args.provider,
             threshold=self.args.threshold,
@@ -115,6 +124,8 @@ class LiveRuntimeManager:
                 with self.state_lock:
                     self.latest_raw_frame = frame.copy()
                     self.frame_height, self.frame_width = frame.shape[:2]
+                    self.last_frame_time = time.strftime("%Y-%m-%d %H:%M:%S")
+                    self.capture_revision += 1
             except Exception as exc:
                 self.last_error = str(exc)
                 time.sleep(0.2)
@@ -142,34 +153,53 @@ class LiveRuntimeManager:
 
     def _inference_loop(self):
         last_inference_ts = None
+        processed_capture_revision = -1
         while not self.stop_event.is_set():
             with self.state_lock:
                 frame = None if self.latest_raw_frame is None else self.latest_raw_frame.copy()
+                capture_revision = self.capture_revision
 
-            if frame is None:
-                time.sleep(0.03)
+            if frame is None or capture_revision == processed_capture_revision:
+                time.sleep(0.005)
                 continue
 
+            started = time.perf_counter()
             try:
                 with self.sdk_lock:
                     results = [] if self.sdk is None else self.sdk.infer(frame)
+                duration_ms = (time.perf_counter() - started) * 1000.0
                 with self.state_lock:
                     self.last_results = copy.deepcopy(results)
                     self.last_result_count = len(results)
-                    self.last_frame_time = time.strftime("%Y-%m-%d %H:%M:%S")
+                    self.last_result_time = time.strftime("%Y-%m-%d %H:%M:%S")
                     self.last_error = ""
+                    self.result_revision += 1
+                    self.last_inference_duration_ms = round(duration_ms, 2)
+                    if self.avg_inference_duration_ms <= 0:
+                        self.avg_inference_duration_ms = duration_ms
+                    else:
+                        self.avg_inference_duration_ms = (self.avg_inference_duration_ms * 0.9) + (duration_ms * 0.1)
             except Exception as exc:
                 self.last_error = str(exc)
                 with self.state_lock:
                     self.last_results = []
+                    self.last_result_count = 0
+                    self.result_revision += 1
+                duration_ms = (time.perf_counter() - started) * 1000.0
+                self.last_inference_duration_ms = round(duration_ms, 2)
 
             now = time.perf_counter()
             if last_inference_ts is not None:
                 interval = max(1e-6, now - last_inference_ts)
                 self.inference_fps = (self.inference_fps * 0.9) + ((1.0 / interval) * 0.1)
             last_inference_ts = now
+            processed_capture_revision = capture_revision
 
-            time.sleep(max(0.0, 1.0 / max(1, self.args.inference_fps)))
+            if self.max_inference_fps > 0:
+                min_interval = 1.0 / float(self.max_inference_fps)
+                elapsed = time.perf_counter() - started
+                if elapsed < min_interval:
+                    time.sleep(min_interval - elapsed)
 
     def get_stream_frame(self) -> bytes:
         with self.state_lock:
@@ -229,6 +259,20 @@ class LiveRuntimeManager:
             )
         return normalized
 
+    def _looks_like_memory_error(self, exc: Exception) -> bool:
+        message = str(exc).lower()
+        keywords = [
+            "memory",
+            "mem",
+            "cma",
+            "out of memory",
+            "cannot allocate",
+            "cannot mmap",
+            "insufficient",
+            "failed to submit",
+        ]
+        return isinstance(exc, MemoryError) or any(keyword in message for keyword in keywords)
+
     def switch_model(self, model_pack: str) -> dict:
         with self.switch_lock:
             if model_pack == self.current_model_pack and self.sdk is not None:
@@ -237,20 +281,27 @@ class LiveRuntimeManager:
             self.switch_in_progress = True
             self.last_switch_error = ""
             before_rss_mb = self.process_memory_mb()
+            previous_model_pack = self.current_model_pack
             new_sdk = None
-            old_sdk = None
+            released_old_for_retry = False
             start = time.perf_counter()
 
             try:
-                new_sdk = FaceSDK(
-                    gallery_dir=str(self.gallery_dir),
-                    model_pack=model_pack,
-                    backend=self.args.backend,
-                    provider=self.args.provider,
-                    threshold=self.args.threshold,
-                    det_size=self.args.det_size,
-                    model_zoo_root=self.args.model_zoo_root,
-                )
+                switch_mode = "warm"
+                try:
+                    new_sdk = self._build_sdk(model_pack)
+                except Exception as exc:
+                    if not self._looks_like_memory_error(exc):
+                        raise
+                    switch_mode = "cold_retry"
+                    with self.sdk_lock:
+                        old_sdk = self.sdk
+                        self.sdk = None
+                    if old_sdk is not None:
+                        old_sdk.close()
+                    gc.collect()
+                    released_old_for_retry = True
+                    new_sdk = self._build_sdk(model_pack)
 
                 with self.sdk_lock:
                     old_sdk = self.sdk
@@ -268,13 +319,26 @@ class LiveRuntimeManager:
                     "duration_ms": round((time.perf_counter() - start) * 1000.0, 2),
                     "memory_before_mb": before_rss_mb,
                     "memory_after_mb": after_rss_mb,
+                    "switch_mode": switch_mode,
+                    "released_old_for_retry": released_old_for_retry,
                 }
                 return self.describe_runtime()
             except Exception as exc:
                 if new_sdk is not None:
                     new_sdk.close()
-                self.last_switch_error = str(exc)
-                raise
+                restore_error = ""
+                with self.sdk_lock:
+                    sdk_missing = self.sdk is None
+                if released_old_for_retry and sdk_missing:
+                    try:
+                        restored_sdk = self._build_sdk(previous_model_pack)
+                        with self.sdk_lock:
+                            self.sdk = restored_sdk
+                            self.current_model_pack = previous_model_pack
+                    except Exception as restore_exc:
+                        restore_error = f" / restore failed: {restore_exc}"
+                self.last_switch_error = f"{exc}{restore_error}"
+                raise RuntimeError(self.last_switch_error) from exc
             finally:
                 self.switch_in_progress = False
 
@@ -393,6 +457,51 @@ class LiveRuntimeManager:
             "frame_width": frame_width,
             "frame_height": frame_height,
             "memory_rss_mb": self.process_memory_mb(),
+            "capture_revision": self.capture_revision,
+            "result_revision": self.result_revision,
+            "last_result_time": self.last_result_time,
+            "last_inference_duration_ms": round(self.last_inference_duration_ms, 2),
+            "avg_inference_duration_ms": round(self.avg_inference_duration_ms, 2),
+            "max_inference_fps": self.max_inference_fps,
             "latest_results": results,
             "sdk": sdk_info,
+        }
+
+    def describe_live_state(self) -> dict:
+        with self.sdk_lock:
+            sdk_info = {} if self.sdk is None else self.sdk.describe()
+        with self.state_lock:
+            results = copy.deepcopy(self.last_results)
+            frame_width = self.frame_width
+            frame_height = self.frame_height
+            last_frame_time = self.last_frame_time
+            last_result_time = self.last_result_time
+            last_result_count = self.last_result_count
+            capture_revision = self.capture_revision
+            result_revision = self.result_revision
+
+        return {
+            "model_pack": self.current_model_pack,
+            "resolved_model_pack": sdk_info.get("resolved_model_pack"),
+            "alias_of": sdk_info.get("alias_of"),
+            "gallery_count": sdk_info.get("gallery_count", 0),
+            "capture_fps": round(self.capture_fps, 2),
+            "inference_fps": round(self.inference_fps, 2),
+            "stream_fps": round(self.stream_fps, 2),
+            "memory_rss_mb": self.process_memory_mb(),
+            "frame_width": frame_width,
+            "frame_height": frame_height,
+            "last_frame_time": last_frame_time,
+            "last_result_time": last_result_time,
+            "last_result_count": last_result_count,
+            "last_error": self.last_error,
+            "last_switch_error": self.last_switch_error,
+            "last_switch_summary": self.last_switch_summary,
+            "switch_in_progress": self.switch_in_progress,
+            "capture_revision": capture_revision,
+            "result_revision": result_revision,
+            "last_inference_duration_ms": round(self.last_inference_duration_ms, 2),
+            "avg_inference_duration_ms": round(self.avg_inference_duration_ms, 2),
+            "max_inference_fps": self.max_inference_fps,
+            "latest_results": results,
         }

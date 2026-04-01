@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 
@@ -40,6 +41,39 @@ def create_app(args) -> FastAPI:
         payload = manager.describe_runtime()
         payload["available_model_packs"] = manager.list_model_packs()
         return payload
+
+    @app.get("/api/live-state")
+    def api_live_state():
+        return manager.describe_live_state()
+
+    @app.get("/api/live-state/stream")
+    def api_live_state_stream():
+        def event_generator():
+            last_payload = ""
+            last_keepalive = time.perf_counter()
+            interval = max(0.02, 1.0 / max(1, args.live_state_fps))
+            while not manager.stop_event.is_set():
+                payload = json.dumps(manager.describe_live_state(), ensure_ascii=False)
+                if payload != last_payload:
+                    yield f"event: state\ndata: {payload}\n\n"
+                    last_payload = payload
+                    last_keepalive = time.perf_counter()
+                else:
+                    now = time.perf_counter()
+                    if now - last_keepalive >= 1.0:
+                        yield ": keep-alive\n\n"
+                        last_keepalive = now
+                time.sleep(interval)
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @app.get("/api/model-packs")
     def api_model_packs():

@@ -11,15 +11,18 @@ Smoke:
 Full:
   source ../envs/ifr_rknn_host_cp310/bin/activate
   python conversion/export_insightface_pack_rknn.py \
-    --model-packs buffalo_m,buffalo_l,buffalo_s \
+    --model-packs buffalo_m_i8 \
     --target-platform rk3588 \
-    --dtype fp
+    --dtype i8 \
+    --detector-dataset conversion/results/calibration/buffalo_m_i8/detector_dataset.txt \
+    --recognizer-dataset conversion/results/calibration/buffalo_m_i8/recognizer_dataset.txt
 
 Main inputs:
   - `--model-packs`: comma-separated pack names
   - `--insightface-root`: source model root, default `~/.insightface`
   - `--dtype`: `fp` or `i8`
-  - `--dataset`: optional INT8 calibration dataset
+  - `--dataset`: shared INT8 calibration dataset
+  - `--detector-dataset`, `--recognizer-dataset`: role-specific INT8 calibration dataset
 
 Main outputs:
   - `conversion/results/model_zoo/<platform>/<pack>/*.rknn`
@@ -87,6 +90,21 @@ FACE_PACK_PRESETS = {
             "input_shape": [1, 3, 112, 112],
         },
     },
+    "buffalo_m_i8": {
+        "source_pack": "buffalo_m",
+        "detector": {
+            "onnx_filename": "det_2.5g.onnx",
+            "output_filename": "det_2.5g_fp16.rknn",
+            "model_kind": "detection",
+            "input_shape": [1, 3, 640, 640],
+        },
+        "recognizer": {
+            "onnx_filename": "w600k_r50.onnx",
+            "output_filename": "w600k_r50_fp16.rknn",
+            "model_kind": "recognition",
+            "input_shape": [1, 3, 112, 112],
+        },
+    },
 }
 
 
@@ -102,6 +120,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-platform", default="rk3588")
     parser.add_argument("--dtype", choices=["fp", "i8"], default="fp")
     parser.add_argument("--dataset")
+    parser.add_argument("--detector-dataset")
+    parser.add_argument("--recognizer-dataset")
     parser.add_argument("--float-dtype", default="float16")
     parser.add_argument("--optimization-level", type=int, default=3)
     parser.add_argument("--skip-existing", action="store_true")
@@ -140,6 +160,14 @@ def output_filename_for_dtype(output_filename: str, dtype: str) -> str:
     return output_filename.replace("_fp16.rknn", "_int8.rknn")
 
 
+def dataset_for_role(args: argparse.Namespace, role: str) -> str | None:
+    if role == "detector":
+        return args.detector_dataset or args.dataset
+    if role == "recognizer":
+        return args.recognizer_dataset or args.dataset
+    return args.dataset
+
+
 def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
     preset = FACE_PACK_PRESETS[model_pack]
     pack_dir = Path(args.output_root).resolve() / args.target_platform / model_pack
@@ -160,13 +188,15 @@ def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
         print("alias manifest:", manifest_path)
         return manifest
 
-    source_dir = resolve_pack_source_dir(Path(args.insightface_root), model_pack)
+    source_pack = preset.get("source_pack", model_pack)
+    source_dir = resolve_pack_source_dir(Path(args.insightface_root), source_pack)
     exported_models = {}
 
     for role in ("detector", "recognizer"):
         role_info = preset[role]
         onnx_path = source_dir / role_info["onnx_filename"]
         output_path = pack_dir / output_filename_for_dtype(role_info["output_filename"], args.dtype)
+        role_dataset = dataset_for_role(args, role)
 
         metadata = None
         if args.skip_existing:
@@ -182,7 +212,7 @@ def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
                 input_shape=role_info["input_shape"],
                 target_platform=args.target_platform,
                 dtype=args.dtype,
-                dataset=args.dataset,
+                dataset=role_dataset,
                 float_dtype=args.float_dtype,
                 optimization_level=args.optimization_level,
                 verbose=args.verbose,
@@ -196,6 +226,7 @@ def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
             "metadata_filename": output_path.with_suffix(".json").name,
             "model_kind": role_info["model_kind"],
             "input_shape": role_info["input_shape"],
+            "dataset": role_dataset,
             "metadata": metadata,
         }
 
@@ -203,6 +234,7 @@ def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
         "model_pack": model_pack,
         "target_platform": args.target_platform,
         "dtype": args.dtype,
+        "source_pack": source_pack,
         "source_pack_dir": str(source_dir),
         "models": exported_models,
     }
@@ -214,8 +246,8 @@ def export_pack_models(args: argparse.Namespace, model_pack: str) -> dict:
 
 def main() -> None:
     args = parse_args()
-    if args.dtype != "fp" and not args.dataset:
-        raise ValueError("양자화 변환에는 --dataset 이 필요합니다.")
+    if args.dtype != "fp" and not (args.dataset or args.detector_dataset or args.recognizer_dataset):
+        raise ValueError("양자화 변환에는 --dataset 또는 role별 dataset 인자가 필요합니다.")
 
     manifests = []
     for model_pack in parse_csv_names(args.model_packs):
