@@ -4,7 +4,7 @@
 
 - 이 모듈은 `OrangePI RK3588`에서 얼굴 인식 런타임을 실기기 기준으로 정리한다.
 - 현재 첫 구현 목표는 `face-only` 웹 데모와 `ONNX Runtime CPU` 검증 경로를 먼저 닫는 것이다.
-- 이후 `RKNN` 주경로가 준비되면 같은 입력과 같은 gallery 규칙 위에 실행 backend만 교체한다.
+- 현재는 첫 `RKNN` 주경로인 `buffalo_sc + FaceWrapper(backend="rknn")`를 실기기에서 닫았고, 이후 같은 규칙으로 model zoo를 확장한다.
 - 최종 목표는 `앱 코드가 import하는 RKNN face SDK`와 `front / back이 분리된 별도 web demo`를 분리해 유지하는 것이다.
 
 ## 현재 사용 형태
@@ -19,8 +19,8 @@ from runtime import FaceWrapper
 
 wrapper = FaceWrapper(
     gallery_dir="runtime/gallery",
-    model_pack="buffalo_s",
-    provider="CPUExecutionProvider",
+    model_pack="buffalo_sc",
+    backend="rknn",
 )
 results = wrapper.infer(frame)
 ```
@@ -82,9 +82,10 @@ results = wrapper.infer(frame)
 ## 현재 고정 결정
 
 - 현재 웹 데모는 `face-only` 경로만 유지하고 speaker 경로는 넣지 않는다.
-- 현재 첫 backend는 `ONNX Runtime CPUExecutionProvider`다.
+- 첫 검증 backend는 `ONNX Runtime CPUExecutionProvider`이고, 첫 성공 `RKNN` backend pack은 `buffalo_sc`다.
 - `RKNN Lite2` 실기기 smoke 환경은 `../envs/ifr_rknn_lite2_cp310`로 고정한다.
 - `RKNN Lite2` 실기기 smoke 환경은 현재 `opencv-python-headless 4.10.0.84`까지 함께 설치한다.
+- `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std` 전처리는 runtime 내부 처리에 맡긴다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
 - 현재 OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
@@ -118,6 +119,10 @@ results = wrapper.infer(frame)
   - `insightface_gallery_web.service` 설치와 stable camera source 선택
 - `runtime/probe_rknn_lite2.py`
   - OrangePI에서 `.rknn` 파일 단건 추론을 확인하는 smoke entry
+- `runtime/rknn_face_gallery_recognizer.py`
+  - `buffalo_sc` 기준 첫 `RKNN` gallery 인식 파이프라인
+- `runtime/rknn_model_zoo.py`
+  - 변환된 `RKNN model pack` 경로와 metadata 해석 helper
 
 ## 관련 문서
 

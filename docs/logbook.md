@@ -23,8 +23,9 @@
 - host RKNN 변환 환경은 `../envs/ifr_rknn_host_cp310`, OrangePI RKNN Lite2 환경은 `../envs/ifr_rknn_lite2_cp310`으로 잡았다.
 - `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 host `FP16 RKNN export`는 성공했다.
 - OrangePI에서 `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 `RKNN Lite2` 파일 입력 smoke도 성공했다.
+- OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
 - 아직 확정되지 않은 항목은 RKNN smoke 기준값, 새 web demo 기술 스택, 최종 model zoo metadata 형식이다.
-- 아직 없는 항목은 실제 RKNN 파이프라인 wrapper, 새 web demo front / back 코드다.
+- 아직 없는 항목은 새 web demo front / back 코드와 나머지 model pack의 RKNN full 변환 결과다.
 
 ## 현재 전역 결정
 
@@ -46,6 +47,7 @@
 - host 변환 환경은 `setuptools 75.8.0`, `onnx 1.16.1`까지 함께 고정해야 실제 변환이 된다.
 - OrangePI `RKNN Lite2` 환경은 현재 `opencv-python-headless 4.10.0.84`까지 포함해야 smoke script가 바로 돈다.
 - 현재 OrangePI의 `librknnrt`는 `2.1.0`, driver는 `0.9.6`으로 보이며, exported model의 toolkit `2.3.2`와 warning은 나지만 smoke 추론은 실제로 성공한다.
+- 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣어야 하고, 변환 시 넣은 `mean/std` 전처리를 runtime에서 다시 하지 않는다.
 - 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
 - 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
 - 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 운영 인터페이스`다.
@@ -120,8 +122,9 @@
   - [x] OrangePI RKNN Runtime smoke 구성
   - [x] `buffalo_sc` 실기기 추론 성공
   - [x] 성공 절차 문서화
+  - [x] 첫 RKNN wrapper 표면을 `FaceWrapper`에 연결
   - [ ] 나머지 모델팩 full 변환 계획 확정
-  - [ ] RKNN model zoo wrapper 표면 구현
+  - [ ] 나머지 model pack을 RKNN wrapper 표면에 연결
   - [ ] 새 web demo front / back 구조 설계
   - [ ] 새 web demo의 모델 전환 UI 구현
   - [ ] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
@@ -160,3 +163,7 @@
 - 2026-04-01: OrangePI에서 `buffalo_sc det_500m_fp16.rknn` probe 결과 `9`개 출력 tensor와 비영값 범위를 확인했고 detection smoke를 통과했다.
 - 2026-04-01: OrangePI에서 `buffalo_sc w600k_mbf_fp16.rknn` probe 결과 `1 x 512` 출력 tensor와 비영값 범위를 확인했고 recognition smoke를 통과했다.
 - 2026-04-01: OrangePI runtime은 `librknnrt 2.1.0`, driver `0.9.6`으로 보이며 model toolkit `2.3.2`와 버전 warning은 남지만 현재 smoke 추론 자체는 성공했다.
+- 2026-04-01: `runtime.face_wrapper`의 eager import 때문에 `onnxruntime`가 없는 Lite2 env에서 import 실패가 나는 문제를 lazy import로 수정했다.
+- 2026-04-01: RKNN detector 점수가 비정상적으로 낮은 원인이 `float32 NCHW` 이중 전처리였음을 확인했고, `raw RGB uint8 NHWC` 입력으로 고쳤다.
+- 2026-04-01: NHWC 전환 뒤 detector grid shape 계산이 깨진 부분을 `self.input_height`, `self.input_width` 기준으로 고쳤다.
+- 2026-04-01: OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")`로 gallery 1명 file-input end-to-end를 다시 검증했고 `gallery_count 1`, `TestUser`, `similarity 1.0`, `det_score 0.6806640625`를 확인했다.

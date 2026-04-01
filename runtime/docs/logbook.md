@@ -21,6 +21,7 @@
 - 현재 live status 기준 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0`, `last_error=""`를 확인했다.
 - `runtime/probe_rknn_lite2.py`를 추가했고, 다음 단계는 host에서 만든 `buffalo_sc` RKNN 산출물을 OrangePI에서 smoke하는 것이다.
 - OrangePI에서 `buffalo_sc det_500m_fp16.rknn`, `buffalo_sc w600k_mbf_fp16.rknn` 파일 입력 smoke는 실제로 성공했다.
+- OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
 
 ## 현재 모듈 결정
 
@@ -32,6 +33,7 @@
 - OrangePI 단건 RKNN smoke는 우선 `probe_rknn_lite2.py`와 파일 입력으로 닫는다.
 - 현재 OrangePI Lite2 smoke env는 `RKNNLite + opencv-python-headless 4.10.0.84` 조합으로 유지한다.
 - 현재 OrangePI runtime은 `librknnrt 2.1.0`, driver `0.9.6`으로 보이며 toolkit `2.3.2` exported model과 warning은 남지만 smoke 추론은 통과한다.
+- 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std`를 runtime에서 다시 적용하지 않는다.
 - gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
@@ -85,14 +87,15 @@
 - [x] stable camera source 기반 service 설치 구조 반영
 - [x] OrangePI `RKNN Lite2` venv 생성 스크립트 작성
 - [x] RKNN runtime smoke entry script 초안 작성
-- [ ] `buffalo_sc` RKNN backend 연결
-- [ ] RKNN SDK 공용 표면 초안 작성
+- [x] `buffalo_sc` RKNN backend 연결
+- [x] RKNN SDK 공용 표면 초안 작성
 - [ ] 새 web demo back 구조 설계
 - [ ] 새 web demo front 구조 설계
 - [ ] 모델 전환 UI 구현
 - [ ] gallery 등록 / 삭제 / 촬영 API 구현
 - [ ] gallery 등록 / 삭제 / 촬영 UI 구현
-- [ ] wrapper API에 RKNN backend 선택 표면 추가
+- [x] wrapper API에 RKNN backend 선택 표면 추가
+- [ ] 나머지 model pack을 wrapper 표면에 연결
 - [x] OrangePI `RKNN Lite2` smoke 성공
 
 ## Recent Logs
@@ -117,3 +120,7 @@
 - 2026-04-01: OrangePI 첫 RKNN smoke에서 `cv2` 누락을 확인했고, Lite2 환경에 `opencv-python-headless 4.10.0.84`를 추가해 해결했다.
 - 2026-04-01: OrangePI에서 `det_500m_fp16.rknn` probe가 성공했고 `9`개 출력 tensor와 비영값 범위를 확인했다.
 - 2026-04-01: OrangePI에서 `w600k_mbf_fp16.rknn` probe가 성공했고 `1 x 512` 출력 tensor와 비영값 범위를 확인했다.
+- 2026-04-01: `runtime.face_wrapper`가 Lite2 env에서 `onnxruntime` 때문에 import 실패하던 문제를 lazy import로 수정했다.
+- 2026-04-01: RKNN detector 점수가 비정상적으로 낮은 원인이 `float32 NCHW` 이중 전처리였음을 확인했고, `raw RGB uint8 NHWC` 입력으로 고쳤다.
+- 2026-04-01: NHWC 전환 뒤 detector grid shape 계산이 깨지던 문제를 `self.input_height`, `self.input_width` 기준으로 수정했다.
+- 2026-04-01: OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")`로 gallery 1명 file-input end-to-end를 검증했고 `TestUser`, `similarity 1.0`, `det_score 0.6806640625`를 확인했다.

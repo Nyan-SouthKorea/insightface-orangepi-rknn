@@ -15,6 +15,7 @@
 - `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 얇은 표면이 아니라, 최종적으로 `RKNN face SDK`의 공용 import 표면으로 승격한다.
 - `runtime/face_gallery_web_demo.py`는 현재 1차 CPU 검증용 demo이고, 이후에는 `front / back`이 분리된 새 web demo로 교체한다.
 - 새 web demo는 모델 전환, 실시간 상태 표시, gallery 등록과 삭제, 사용자 촬영과 다중 이미지 관리까지 포함한 운영 인터페이스를 목표로 한다.
+- 현재 첫 `RKNN wrapper` 성공 경로는 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준으로 닫았다.
 - 따라서 개발 중에도 `wrapper를 제품`, `web demo를 검증 도구이자 운영 인터페이스`로 보고 분리 상태를 유지한다.
 
 ## 현재 주경로
