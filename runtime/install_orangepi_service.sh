@@ -48,5 +48,6 @@ sed \
 
 "${SUDO[@]}" cp "${SERVICE_OUTPUT}" "${SYSTEMD_TARGET}"
 "${SUDO[@]}" systemctl daemon-reload
-"${SUDO[@]}" systemctl enable --now insightface_gallery_web.service
+"${SUDO[@]}" systemctl enable insightface_gallery_web.service
+"${SUDO[@]}" systemctl restart insightface_gallery_web.service
 "${SUDO[@]}" systemctl --no-pager --full status insightface_gallery_web.service

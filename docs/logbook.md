@@ -119,3 +119,4 @@
 - 2026-04-01: OrangePI에서 `python3.10-venv`를 설치한 뒤 `../envs/ifr_ort_cpu_probe` 생성과 `onnxruntime 1.23.2` CPU provider 초기화를 확인했다.
 - 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://192.168.20.238:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
 - 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`은 실패했고 `11`, `20`이 열렸으므로 서비스 템플릿 기본 카메라 번호를 `11`로 조정했다.
+- 2026-04-01: 기존에 실행 중인 service는 unit 파일 변경 뒤 자동 재시작되지 않는 것을 확인했고, `install_orangepi_service.sh`를 `restart`까지 수행하도록 보강했다.

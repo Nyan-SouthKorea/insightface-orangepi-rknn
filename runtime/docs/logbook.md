@@ -51,3 +51,4 @@
 - 2026-04-01: OrangePI에서 `python3.10-venv` 설치 뒤 `../envs/ifr_ort_cpu_probe` 생성, `onnxruntime 1.23.2`, `CPUExecutionProvider` 확인, `buffalo_s` 초기화까지 통과했다.
 - 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 올리고 LAN `api/status`, `stream.mjpg` 응답을 확인했다.
 - 2026-04-01: OrangePI 카메라 probe 결과 `0`, `21`은 실패했고 `11`, `20`은 열렸으므로 서비스 기본 카메라 번호를 `11`로 조정했다.
+- 2026-04-01: 이미 떠 있는 service에 새 unit 파일을 다시 적용하려면 `enable --now`만으로는 부족하다는 점을 확인했고, 설치 스크립트를 `daemon-reload -> enable -> restart` 순서로 보강했다.
