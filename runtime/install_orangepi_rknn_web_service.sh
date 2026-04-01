@@ -20,10 +20,11 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORK_ROOT="$(cd "${REPO_ROOT}/.." && pwd)"
 VENV_ROOT="${WORK_ROOT}/envs/ifr_rknn_lite2_cp310"
 SERVICE_TEMPLATE="${REPO_ROOT}/runtime/insightface_rknn_web.service.template"
-SERVICE_OUTPUT="/tmp/insightface_gallery_web.service"
 SYSTEMD_TARGET="/etc/systemd/system/insightface_gallery_web.service"
 SERVICE_USER="${SUDO_USER:-${USER}}"
 DEFAULT_CAMERA_SOURCE=""
+SERVICE_OUTPUT="$(mktemp /tmp/insightface_gallery_web.XXXXXX.service)"
+trap 'rm -f "${SERVICE_OUTPUT}"' EXIT
 
 if [[ -d /dev/v4l/by-id ]]; then
   DEFAULT_CAMERA_SOURCE="$(find /dev/v4l/by-id -maxdepth 1 -type l -name '*video-index0' | sort | head -n 1)"
