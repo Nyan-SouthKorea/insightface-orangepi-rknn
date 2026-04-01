@@ -183,8 +183,8 @@ class RknnScrfdDetector:
         scores_list = []
         bboxes_list = []
         kpss_list = []
-        input_height = tensor.shape[2]
-        input_width = tensor.shape[3]
+        input_height = self.input_height
+        input_width = self.input_width
 
         for index, stride in enumerate(self.feat_stride_fpn):
             scores = outputs[index].reshape(-1)
@@ -217,8 +217,8 @@ class RknnScrfdDetector:
         scores_list = []
         bboxes_list = []
         kpss_list = []
-        input_height = tensor.shape[2]
-        input_width = tensor.shape[3]
+        input_height = self.input_height
+        input_width = self.input_width
 
         for index, stride in enumerate(self.feat_stride_fpn):
             scores = outputs[index].reshape(-1)
