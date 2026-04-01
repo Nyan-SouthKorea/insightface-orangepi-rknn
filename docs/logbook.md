@@ -10,13 +10,15 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `face-only` 웹 데모와 CPU 검증용 런타임 smoke 완료 단계다.
+- 현재 단계는 `face-only` 웹 데모, `ONNX Runtime CPU` benchmark 기록, OrangePI service 안정화 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
+- 최종 산출물 방향은 `SDK처럼 import하는 wrapper`와 `별도 web demo`를 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
-- 아직 확정되지 않은 항목은 첫 번째 타깃 모델 조합, 호스트 환경 버전, 실기기 측정 기준값이다.
-- 현재 `OrangePI` 서비스 기본 카메라 장치 번호는 실기기 read probe 기준 `20`으로 둔다.
+- 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
+- 현재 `OrangePI` 서비스는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
+- 아직 확정되지 않은 항목은 첫 번째 RKNN 타깃 모델팩, 호스트 변환 환경 버전표, RKNN smoke 기준값이다.
 - 아직 없는 항목은 변환 스크립트, 인벤토리 스크립트, logbook archive 스크립트, RKNN 실기기 entry script다.
 
 ## 현재 전역 결정
@@ -28,7 +30,6 @@
 - 실제 대용량 산출물은 모듈 내부 `results/` 아래에 둔다.
 - 장시간 변환과 실기기 benchmark는 smoke를 먼저 통과시킨다.
 - `OrangePI` SSH 접속 정보 같은 비공개 장치 자격 정보는 `../secrets/README.local.md`에 유지한다.
-- 로컬 git 저장소는 초기화되어 있다.
 - reference 저장소 `jetson-face-speaker-recognition`에서 가져올 핵심 구조는 `얼굴 갤러리 로드 -> 실시간 입력 -> 얼굴 임베딩 비교 -> 이름 표시` 흐름이다.
 - reference 저장소의 화자 인식 경로는 이번 프로젝트 범위에서 제외한다.
 - 공식 ONNX Runtime 문서 기준 Python CPU 패키지는 Linux ARM64를 지원한다.
@@ -38,42 +39,57 @@
 - 필요하면 ONNX Runtime은 CPU 검증 경로로만 별도 유지하고, 실시간 목표 경로는 RKNN 변환을 기본으로 잡는다.
 - 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
 - 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
+- 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 시연 도구`다.
+- 현재 웹 데모는 `capture thread`, `inference thread`, `render thread`를 분리해 스트리밍 끊김을 줄이는 구조로 유지한다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 - 아직 `tools/directory_inventory.py`가 없으므로, 초기 부트스트랩 단계에서는 `find`와 `rg --files` 기반의 shallow inventory로 대신하고 그 사실을 logbook에 남긴다.
 - 아직 `tools/logbook_archive_guard.py`가 없으므로, 초기 단계에서는 줄 수를 수동으로 확인한다.
 
+## 현재 CPU benchmark 요약
+
+- 실행 위치: `OrangePI RK3588`
+- 실행 환경: `../envs/ifr_ort_cpu_probe`, `onnxruntime 1.23.2`, `CPUExecutionProvider`
+- 입력 이미지: `runtime/results/face_benchmark_input.jpg`
+- 반복 조건: `warmup 5`, `repeat 20`, `det_size 640`
+
+| model pack | zip size MB | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| buffalo_sc | 14.3 | det_500m.onnx | w600k_mbf.onnx | 49.21 | 23.09 | 139.57 | 7.16 |
+| buffalo_s | 121.7 | det_500m.onnx | w600k_mbf.onnx | 50.60 | 27.01 | 160.37 | 6.24 |
+| buffalo_m | 263.2 | det_2.5g.onnx | w600k_r50.onnx | 152.80 | 318.90 | 635.75 | 1.57 |
+| buffalo_l | 275.3 | det_10g.onnx | w600k_r50.onnx | 573.89 | 429.12 | 1102.10 | 0.91 |
+
 ## 현재 활성 체크리스트
 
 - 이번 실행의 목표
-  - `face-only` gallery 인식 웹 데모와 CPU 검증용 환경을 현재 repo에 반영한다.
-  - `OrangePI RK3588`에서 pull 뒤 바로 설치 가능한 서비스 경로를 만든다.
+  - CPU benchmark 결과를 canonical 문서에 반영한다.
+  - OrangePI service가 재부팅 뒤에도 같은 IP와 안정된 카메라 source로 올라오게 유지한다.
+  - wrapper와 web demo 분리 원칙을 `README`에 명확히 고정한다.
 - 이번 실행의 비범위
   - 실제 RKNN 변환 코드 작성
   - RK3588 NPU benchmark 수치 확정
   - reference 저장소 전체 이식
 - 수정 대상 파일과 역할
-  - `docs/AGENT.md`: workspace 구조 규칙 갱신
-  - `docs/logbook.md`: 현재 스냅샷, 전역 결정, 활성 체크리스트, 최근 로그
-  - `runtime/README.md`: 현재 runtime 주경로와 entry script 설명
-  - `runtime/docs/logbook.md`: 모듈 현재 체크리스트와 최근 로그
-  - `runtime/face_gallery_recognizer.py`: gallery 기반 얼굴 인식
-  - `runtime/face_gallery_web_demo.py`: 웹 스트리밍 entry script
-  - `runtime/image_capture.py`: 웹캠과 JSON 입력 helper
-  - `runtime/requirements_ort_cpu_probe.txt`: CPU 검증용 패키지 목록
-  - `runtime/setup_orangepi_ort_cpu_env.sh`: OrangePI용 venv 생성과 probe
-  - `runtime/install_orangepi_service.sh`: systemd 설치 helper
-  - `runtime/insightface_gallery_web.service.template`: 서비스 템플릿
-  - `.gitignore`: Python cache 제외
+  - `README.md`: 프로젝트 제품 방향과 고정 메모
+  - `docs/logbook.md`: 전역 truth, benchmark 요약, 최근 로그
+  - `runtime/README.md`: wrapper와 web demo 역할 분리, service 실행 기준
+  - `runtime/docs/logbook.md`: 모듈 benchmark 상세와 다음 단계
+  - `runtime/image_capture.py`: 숫자 인덱스와 장치 경로를 모두 받는 camera source helper
+  - `runtime/face_gallery_web_demo.py`: 분리된 실시간 루프, FPS 표시, 빨간색 상단 글씨
+  - `runtime/insightface_gallery_web.service.template`: camera source 기반 service 실행
+  - `runtime/install_orangepi_service.sh`: OrangePI에서 stable camera source 자동 선택
 - 생성되거나 갱신되는 산출물 경로
   - `../envs/ifr_ort_cpu_probe`
+  - `runtime/results/260401_1530_ort_cpu_benchmark/summary.json`
   - `/etc/systemd/system/insightface_gallery_web.service`
 - 다음 단계 연결
-  - `runtime/`은 OrangePI 설치 smoke와 네트워크 접속 검증으로 이어진다.
-  - `conversion/`은 이후 같은 gallery/runtime 구조를 유지한 채 `InsightFace -> ONNX -> RKNN` 변환 smoke 정의로 이어진다.
+  - `runtime/`은 실제 gallery 사용자 이미지를 넣고 인식 품질을 보는 단계로 이어진다.
+  - `conversion/`은 첫 번째 타깃 모델팩을 정하고 `InsightFace -> ONNX -> RKNN` smoke 정의로 이어진다.
 - 검증 방법과 완료 조건
-  - 새 Python 파일이 문법 오류 없이 compile된다.
-  - 로컬과 OrangePI에서 venv 생성과 `onnxruntime` provider 확인이 된다.
-  - OrangePI에서 서비스가 올라오고 같은 네트워크 PC에서 웹 페이지 접근이 된다.
+  - Python 파일이 문법 오류 없이 compile된다.
+  - OrangePI service가 `camera-source` 기준으로 다시 올라온다.
+  - LAN `api/status`에서 `capture_fps`, `inference_fps`, `stream_fps`가 확인된다.
+  - benchmark 표가 canonical logbook에 기록된다.
 - 체크리스트
   - [x] reference 저장소 clone과 구조 확인
   - [x] face 경로와 speaker 경로 분기 지점 확인
@@ -85,12 +101,17 @@
   - [x] OrangePI 설치 smoke
   - [x] OrangePI 서비스 smoke
   - [x] 같은 네트워크 PC 접속 확인
+  - [x] buffalo 모델팩 CPU benchmark 기록
+  - [x] wrapper와 web demo 분리 방향을 `README`에 반영
+  - [x] OrangePI 고정 IP 설정
+  - [x] 웹 데모 스트리밍과 추론 루프 분리
+  - [x] 웹 데모 FPS 표시와 빨간색 상단 글씨 반영
   - [ ] 첫 번째 타깃 `InsightFace` 모델 조합 확정
   - [ ] 호스트 환경과 `OrangePI RK3588` 실기기 환경 표 작성
   - [ ] 변환 smoke 명령과 full 명령 초안 작성
-  - [ ] 실기기 benchmark smoke 명령과 full 명령 초안 작성
+  - [ ] RKNN model zoo wrapper 표면 초안 작성
+  - [ ] RKNN 실기기 benchmark smoke 명령과 full 명령 초안 작성
   - [ ] 인벤토리 스크립트와 archive guard 스크립트 필요 여부 판단
-  - [x] git 저장소 초기화 여부 결정
 
 ## Recent Logs
 
@@ -99,26 +120,19 @@
 - 2026-04-01: 초기 모듈 경계를 `conversion/`과 `runtime/`으로 고정했다.
 - 2026-04-01: 도구 스크립트와 git 저장소가 아직 없으므로, 부트스트랩 예외를 `AGENT.md`와 logbook에 반영하기로 결정했다.
 - 2026-04-01: `docs/AGENT.md`의 예시를 변환, 양자화 검증, 실기기 benchmark 중심으로 보정했다.
-- 2026-04-01: `wc -l` 확인 결과 active logbook들은 archive 기준인 1000줄에 한참 못 미치므로 archive는 만들지 않았다.
-- 2026-04-01: `git -C repo rev-parse --is-inside-work-tree` 확인 결과 아직 git 저장소가 초기화되지 않은 상태임을 다시 확인했다.
 - 2026-04-01: `../secrets/README.local.md`를 만들고 `OrangePI` SSH 접속 메모를 로컬 전용으로 기록했다.
 - 2026-04-01: `ssh orangepi@192.168.20.238 'hostname; whoami; uname -m'` smoke 결과 `orangepicm5`, `orangepi`, `aarch64`를 확인했다.
 - 2026-04-01: `assets/prompts`는 이전 LLM 작업 흔적으로 판단해 삭제 대상으로 정리하고, 이를 유도한 `AGENT` 문장도 함께 제거했다.
 - 2026-04-01: 로컬 git 저장소 초기화와 첫 push smoke는 완료 상태로 current truth를 갱신했다.
 - 2026-04-01: reference 저장소 `jetson-face-speaker-recognition`를 `/tmp/jetson-face-speaker-recognition`에 clone해 구조를 확인했다.
-- 2026-04-01: reference 저장소의 핵심 재사용 후보는 `module/face_recognition.py`, `module/image_capture.py`, `01_demo_face-recognition.py`로 판단했다.
 - 2026-04-01: reference 저장소의 `main.py`는 `FaceRecognizer + SpeakerRecognizer` 융합 구조이고, 이번 프로젝트에서는 speaker 경로 전체를 제거 대상으로 판단했다.
-- 2026-04-01: 공식 ONNX Runtime 문서 기준 Python CPU 패키지는 Linux ARM64를 지원하지만, 공식 Rockchip RKNPU 실행 제공자는 `RK1808 Linux`만 지원한다는 점을 확인했다.
-- 2026-04-01: 공식 Rockchip 문서 기준 RK3588 NPU 경로는 RKNN 변환 뒤 `RKNN Runtime/Lite2`를 사용하는 흐름이므로, `ONNX Runtime만으로 RK3588 NPU 가속`은 현재 기준으로 주경로로 채택하지 않기로 잠정 판단했다.
-- 2026-04-01: `find`와 `rg --files` 기반 shallow inventory로 현재 repo 경로를 다시 확인했고, 현재 작업 범위를 `runtime` 모듈 구현으로 좁혔다.
+- 2026-04-01: 공식 ONNX Runtime 문서와 Rockchip 문서를 함께 확인한 뒤 `ONNX Runtime CPU 검증`, `RKNN 실시간 주경로`로 역할을 분리하기로 결정했다.
 - 2026-04-01: `face-only` gallery 인식 웹 데모, CPU 검증용 requirements, OrangePI venv 생성 스크립트, systemd 설치 스크립트와 템플릿을 추가했다.
-- 2026-04-01: 로컬 워크스페이스 구조 규칙을 현재 사용자 요청에 맞춰 `repo / envs / secrets`로 갱신했다.
 - 2026-04-01: 로컬 `../envs/ifr_ort_cpu_probe` 생성 smoke에서 `onnxruntime 1.24.4`, 사용 가능 provider `AzureExecutionProvider`, `CPUExecutionProvider`, `buffalo_s` 초기화를 확인했다.
-- 2026-04-01: 로컬 `face_gallery_web_demo.py`를 `json` 입력 경로로 띄워 `http://127.0.0.1:5060/api/status` 응답을 확인했고, 웹 endpoint 기본 동작이 살아 있음을 점검했다.
-- 2026-04-01: `wc -l` 재확인 결과 active logbook 줄 수는 `116`, `49`로 archive 기준 `1000`에 한참 못 미쳐 이번 턴 archive는 만들지 않았다.
 - 2026-04-01: OrangePI에서 `python3.10-venv`를 설치한 뒤 `../envs/ifr_ort_cpu_probe` 생성과 `onnxruntime 1.23.2` CPU provider 초기화를 확인했다.
 - 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://192.168.20.238:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
-- 2026-04-01: OrangePI 카메라 probe 결과 서비스 기본값 `0`, `21`은 실패했고 `11`, `20`은 열렸다.
-- 2026-04-01: OrangePI read probe 결과 `11`은 프레임 읽기 실패, `20`은 프레임 읽기 성공이어서 서비스 템플릿 기본 카메라 번호를 `20`으로 조정했다.
-- 2026-04-01: 기존에 실행 중인 service는 unit 파일 변경 뒤 자동 재시작되지 않는 것을 확인했고, `install_orangepi_service.sh`를 `restart`까지 수행하도록 보강했다.
-- 2026-04-01: `camera-id 20` 기준 재설치 뒤 `api/status`에서 `last_error`가 비어 있고 `last_frame_time`이 갱신되는 것을 확인해, OrangePI CPU 웹 스트리밍 경로가 현재 기준으로 살아 있음을 확인했다.
+- 2026-04-01: OrangePI 카메라 probe 결과 초기에는 `20`에서 읽기 성공을 확인했지만, 이후 USB 장치 번호 재배치로 서비스가 다시 실패하는 상황을 확인했다.
+- 2026-04-01: OrangePI 장치 재점검 결과 USB 카메라는 `/dev/video21`, stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`로 확인했다.
+- 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 thread로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 바꿨다.
+- 2026-04-01: OrangePI LAN 연결을 `nmcli`로 manual 고정 IP로 전환해 재부팅 뒤에도 `192.168.20.238`을 유지하게 설정했다.
+- 2026-04-01: OrangePI CPU benchmark를 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack으로 측정했고, 현재 기준 균형점은 `buffalo_s`, 최대 경량 후보는 `buffalo_sc`로 우선 판단했다.

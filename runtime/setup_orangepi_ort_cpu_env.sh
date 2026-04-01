@@ -7,7 +7,8 @@ set -euo pipefail
 #
 # Full:
 #   bash runtime/setup_orangepi_ort_cpu_env.sh
-#   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 --capture-mode webcam
+#   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
+#     --capture-mode webcam --camera-source /dev/video21
 #
 # Inputs:
 #   - repo/runtime/requirements_ort_cpu_probe.txt

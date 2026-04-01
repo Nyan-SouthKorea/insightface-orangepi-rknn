@@ -22,6 +22,13 @@ VENV_ROOT="${WORK_ROOT}/envs/ifr_ort_cpu_probe"
 SERVICE_TEMPLATE="${REPO_ROOT}/runtime/insightface_gallery_web.service.template"
 SERVICE_OUTPUT="/tmp/insightface_gallery_web.service"
 SYSTEMD_TARGET="/etc/systemd/system/insightface_gallery_web.service"
+DEFAULT_CAMERA_SOURCE=""
+
+if [[ -d /dev/v4l/by-id ]]; then
+  DEFAULT_CAMERA_SOURCE="$(find /dev/v4l/by-id -maxdepth 1 -type l -name '*video-index0' | sort | head -n 1)"
+fi
+
+CAMERA_SOURCE="${CAMERA_SOURCE:-${DEFAULT_CAMERA_SOURCE:-21}}"
 
 if [[ "${EUID}" -eq 0 ]]; then
   SUDO=()
@@ -44,6 +51,7 @@ sed \
   -e "s|__USER__|${USER}|g" \
   -e "s|__REPO_ROOT__|${REPO_ROOT}|g" \
   -e "s|__VENV_ROOT__|${VENV_ROOT}|g" \
+  -e "s|__CAMERA_SOURCE__|${CAMERA_SOURCE}|g" \
   "${SERVICE_TEMPLATE}" > "${SERVICE_OUTPUT}"
 
 "${SUDO[@]}" cp "${SERVICE_OUTPUT}" "${SYSTEMD_TARGET}"
@@ -51,3 +59,5 @@ sed \
 "${SUDO[@]}" systemctl enable insightface_gallery_web.service
 "${SUDO[@]}" systemctl restart insightface_gallery_web.service
 "${SUDO[@]}" systemctl --no-pager --full status insightface_gallery_web.service
+
+echo "service camera source: ${CAMERA_SOURCE}"

@@ -7,6 +7,23 @@
 - 이후 `RKNN` 주경로가 준비되면 같은 입력과 같은 gallery 규칙 위에 실행 backend만 교체한다.
 - 최종 목표는 `앱 코드가 import하는 wrapper`와 `별도 web demo`를 분리해 유지하는 것이다.
 
+## 현재 사용 형태
+
+- 앱 코드에서는 `runtime.face_wrapper.FaceWrapper`를 import해서 바로 쓴다.
+- 운영 확인과 시연은 `runtime/face_gallery_web_demo.py`를 별도 프로세스로 띄운다.
+- 즉 이 모듈은 처음부터 `wrapper`와 `web demo`를 분리된 진입점으로 유지한다.
+
+```python
+from runtime import FaceWrapper
+
+wrapper = FaceWrapper(
+    gallery_dir="runtime/gallery",
+    model_pack="buffalo_s",
+    provider="CPUExecutionProvider",
+)
+results = wrapper.infer(frame)
+```
+
 ## 이 모듈이 맡는 것
 
 - 실기기 실행 진입점
@@ -66,7 +83,10 @@
 - 현재 웹 데모는 `face-only` 경로만 유지하고 speaker 경로는 넣지 않는다.
 - 현재 첫 backend는 `ONNX Runtime CPUExecutionProvider`다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
-- 현재 `OrangePI` 서비스 템플릿의 기본 카메라 번호는 실기기 read probe 기준 `20`으로 둔다.
+- 현재 OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
+- 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
+- 웹 데모는 `capture`, `inference`, `render` 루프를 분리해 스트리밍 끊김을 줄인다.
+- 상단 overlay에는 `capture_fps`, `infer_fps`, `stream_fps`를 표시하고 글씨는 빨간색으로 유지한다.
 - 실기기 smoke는 카메라 입력보다 파일 입력 경로를 먼저 닫되, 웹 데모는 동일 entry script에서 `webcam/json` 둘 다 받는다.
 - benchmark는 최소 `지연 시간`과 `초당 처리 수`를 함께 기록한다.
 - 앱 코드가 쓰는 wrapper와 사람이 보는 web demo는 별도 파일로 유지한다.
@@ -87,7 +107,7 @@
 - `runtime/setup_orangepi_ort_cpu_env.sh`
   - `../envs/ifr_ort_cpu_probe` 생성과 CPU provider 확인
 - `runtime/install_orangepi_service.sh`
-  - `insightface_gallery_web.service` 설치
+  - `insightface_gallery_web.service` 설치와 stable camera source 선택
 
 ## 관련 문서
 

@@ -2,7 +2,7 @@
 
 Smoke:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode webcam --camera-id 20 --gallery-dir runtime/gallery \
+    --capture-mode webcam --camera-source /dev/video21 --gallery-dir runtime/gallery \
     --model-pack buffalo_s --provider CPUExecutionProvider
 
 Full:
@@ -14,6 +14,7 @@ Full:
 Main inputs:
   - `runtime/gallery/`: gallery user folders
   - webcam frames or JSON image frames
+  - `--camera-source`: numeric index or `/dev/v4l/by-id/...` path
 
 Main outputs:
   - `http://<device-ip>:5000/`: status page with MJPEG stream
@@ -76,6 +77,7 @@ HTML_INDEX = """<!doctype html>
       const error = data.last_error ? `<br>마지막 오류: <code>${data.last_error}</code>` : '';
       document.getElementById('status').innerHTML =
         `입력: <code>${data.capture_mode}</code><br>` +
+        `camera: <code>${data.camera_source}</code><br>` +
         `gallery 인원 수: <code>${data.gallery_count}</code><br>` +
         `provider: <code>${data.provider}</code><br>` +
         `사용 가능한 ORT provider: <code>${data.available_providers.join(', ')}</code><br>` +
@@ -96,6 +98,7 @@ HTML_INDEX = """<!doctype html>
 class FaceGalleryWebDemo:
     def __init__(self, args):
         self.args = args
+        self.camera_source = args.camera_source or str(args.camera_id)
         self.stop_event = threading.Event()
         self.frame_lock = threading.Lock()
         self.state_lock = threading.Lock()
@@ -147,14 +150,14 @@ class FaceGalleryWebDemo:
             else:
                 if self.capture is None or not self.capture.isOpened():
                     self.capture = open_webcam(
-                        camera_id=self.args.camera_id,
+                        camera_source=self.camera_source,
                         width=self.args.camera_width,
                         height=self.args.camera_height,
                         fps=self.args.camera_fps,
                     )
                     if not self.capture.isOpened():
                         self.last_error = (
-                            f"카메라 {self.args.camera_id}를 열지 못했습니다. "
+                            f"카메라 {self.camera_source}를 열지 못했습니다. "
                             "카메라 연결 상태를 확인하세요."
                         )
                         self._set_placeholder(self.last_error)
@@ -255,10 +258,14 @@ class FaceGalleryWebDemo:
             f"model={self.args.model_pack}",
             f"gallery={len(self.wrapper.recognizer.gallery)}",
             f"provider={self.args.provider}",
+            f"camera={self.camera_source}",
             f"capture_fps={self.capture_fps:.1f}",
             f"infer_fps={self.inference_fps:.1f}",
             f"stream_fps={self.stream_fps:.1f}",
         ]
+        overlay = drawn.copy()
+        cv2.rectangle(overlay, (10, 10), (480, 35 + (len(summary_lines) * 28)), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.45, drawn, 0.55, 0, drawn)
         for index, line in enumerate(summary_lines):
             cv2.putText(
                 drawn,
@@ -286,7 +293,7 @@ class FaceGalleryWebDemo:
             (40, 360),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.9,
-            (255, 255, 255),
+            (0, 0, 255),
             2,
             cv2.LINE_AA,
         )
@@ -311,6 +318,7 @@ class FaceGalleryWebDemo:
             "capture_mode": self.args.capture_mode,
             "gallery_count": len(self.wrapper.recognizer.gallery),
             "provider": self.args.provider,
+            "camera_source": self.camera_source,
             "available_providers": ort.get_available_providers(),
             "last_result_count": self.last_result_count,
             "last_frame_time": self.last_frame_time,
@@ -331,7 +339,8 @@ def build_parser():
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("--capture-mode", choices=["webcam", "json"], default="webcam")
-    parser.add_argument("--camera-id", type=int, default=20)
+    parser.add_argument("--camera-id", type=int, default=21)
+    parser.add_argument("--camera-source", default="")
     parser.add_argument("--camera-width", type=int, default=1280)
     parser.add_argument("--camera-height", type=int, default=720)
     parser.add_argument("--camera-fps", type=int, default=30)

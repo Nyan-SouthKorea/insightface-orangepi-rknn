@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Union
 
 import cv2
 
@@ -48,18 +49,29 @@ class JsonImageReader:
         return True, frame
 
 
-def open_webcam(camera_id: int, width: int, height: int, fps: int):
+def _normalize_camera_source(camera_source: Union[str, int]) -> Union[str, int]:
+    if isinstance(camera_source, int):
+        return camera_source
+
+    text = str(camera_source).strip()
+    if text.isdigit():
+        return int(text)
+    return text
+
+
+def open_webcam(camera_source: Union[str, int], width: int, height: int, fps: int):
     backend_candidates = []
     if hasattr(cv2, "CAP_V4L2"):
         backend_candidates.append(cv2.CAP_V4L2)
     backend_candidates.append(None)
 
+    source = _normalize_camera_source(camera_source)
     last_capture = None
     for backend in backend_candidates:
         if backend is None:
-            capture = cv2.VideoCapture(camera_id)
+            capture = cv2.VideoCapture(source)
         else:
-            capture = cv2.VideoCapture(camera_id, backend)
+            capture = cv2.VideoCapture(source, backend)
         last_capture = capture
         if not capture.isOpened():
             continue
@@ -72,5 +84,5 @@ def open_webcam(camera_id: int, width: int, height: int, fps: int):
         return capture
 
     if last_capture is None:
-        last_capture = cv2.VideoCapture(camera_id)
+        last_capture = cv2.VideoCapture(source)
     return last_capture

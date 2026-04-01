@@ -9,15 +9,14 @@
 
 ## 현재 모듈 스냅샷
 
-- `face-only` 웹 데모와 CPU 검증용 `ONNX Runtime` 환경 초안을 만들었다.
-- 로컬 `../envs/ifr_ort_cpu_probe` 생성과 `InsightFace` CPU 초기화 smoke는 통과했다.
-- 로컬 `http://127.0.0.1:5060/api/status` 응답 smoke는 통과했다.
-- `OrangePI RK3588`에서 service 설치, LAN 접근, 실제 프레임 시각 갱신까지 확인했다.
-- 현재 목적은 gallery 사용자 이미지를 넣고 실제 얼굴 인식 결과를 붙이는 것이다.
-- reference 저장소에서 가져올 최소 흐름은 `gallery 자동 로드 -> 웹캠 또는 JSON 입력 -> 실시간 얼굴 인식 -> 웹 스트리밍`이다.
+- `face-only` 웹 데모와 CPU 검증용 `ONNX Runtime` 환경은 1차 smoke를 통과했다.
+- OrangePI에서 `insightface_gallery_web.service` 기동과 LAN 접속은 확인했다.
+- 웹 데모는 현재 `capture`, `inference`, `render` 루프를 분리한 구조로 갱신했다.
+- overlay에는 `capture_fps`, `infer_fps`, `stream_fps`를 함께 표시한다.
+- 앱 코드가 import하는 표면은 `runtime.face_wrapper.FaceWrapper`로 유지한다.
+- 현재 목적은 실제 gallery 이미지를 넣고, 선택할 모델팩을 CPU 기준표로 결정한 뒤, 같은 표면으로 RKNN backend를 붙이는 것이다.
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
-- 현재 `OrangePI` 실기기 read probe 기준 서비스 기본 카메라 번호는 `20`으로 둔다.
-- 아직 정하지 않은 항목은 첫 번째 타깃 모델팩 고정 여부다.
+- 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이고, 장치 번호는 현재 `/dev/video21`이다.
 
 ## 현재 모듈 결정
 
@@ -27,7 +26,23 @@
 - 현재 `face-only` 웹 데모는 CPU 검증 경로로 먼저 세운다.
 - `ONNX Runtime`은 검증용 CPU 경로로 두고, RK3588 NPU 실시간 주경로는 이후 `RKNN`으로 옮긴다.
 - gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
-- 서비스 실행은 `insightface_gallery_web.service` 한 개로 통일한다.
+- service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
+- wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
+
+## 현재 CPU benchmark 상세
+
+- 실행 위치: `OrangePI RK3588`
+- 실행 명령:
+  - `../envs/ifr_ort_cpu_probe/bin/python runtime/benchmark_insightface_cpu.py --image-path runtime/results/face_benchmark_input.jpg --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_l --repeat 20 --warmup 5 --provider CPUExecutionProvider --output-json runtime/results/260401_1530_ort_cpu_benchmark/summary.json`
+- 입력 이미지: `runtime/results/face_benchmark_input.jpg`
+- 결과 JSON: `runtime/results/260401_1530_ort_cpu_benchmark/summary.json`
+
+| model pack | zip size MB | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |
+| buffalo_sc | 14.3 | det_500m.onnx | w600k_mbf.onnx | 49.21 | 23.09 | 139.57 | 7.16 |
+| buffalo_s | 121.7 | det_500m.onnx | w600k_mbf.onnx | 50.60 | 27.01 | 160.37 | 6.24 |
+| buffalo_m | 263.2 | det_2.5g.onnx | w600k_r50.onnx | 152.80 | 318.90 | 635.75 | 1.57 |
+| buffalo_l | 275.3 | det_10g.onnx | w600k_r50.onnx | 573.89 | 429.12 | 1102.10 | 0.91 |
 
 ## 현재 활성 체크리스트
 
@@ -39,6 +54,15 @@
 - [x] systemd 서비스 파일 작성
 - [x] OrangePI에서 venv 생성과 패키지 설치 smoke 수행
 - [x] OrangePI에서 서비스 기동과 네트워크 접속 smoke 수행
+- [x] buffalo model pack CPU benchmark 기록
+- [x] 웹 데모 스트리밍과 추론 루프 분리
+- [x] FPS 표시 추가
+- [x] 빨간색 상단 글씨 반영
+- [x] stable camera source 기반 service 설치 구조 반영
+- [ ] 실제 gallery 사용자 이미지 입력 후 인식 품질 확인
+- [ ] 첫 번째 기본 모델팩 확정
+- [ ] wrapper API에 RKNN backend 선택 표면 추가
+- [ ] RKNN runtime smoke entry script 초안 작성
 
 ## Recent Logs
 
@@ -51,7 +75,7 @@
 - 2026-04-01: `face_gallery_web_demo.py`를 `json` 입력, 빈 gallery 상태로 띄워 `http://127.0.0.1:5060/api/status` 응답을 확인했다.
 - 2026-04-01: OrangePI에서 `python3.10-venv` 설치 뒤 `../envs/ifr_ort_cpu_probe` 생성, `onnxruntime 1.23.2`, `CPUExecutionProvider` 확인, `buffalo_s` 초기화까지 통과했다.
 - 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 올리고 LAN `api/status`, `stream.mjpg` 응답을 확인했다.
-- 2026-04-01: OrangePI 카메라 probe 결과 `0`, `21`은 실패했고 `11`, `20`은 열렸다.
-- 2026-04-01: OrangePI read probe 결과 `11`은 프레임 읽기 실패, `20`은 프레임 읽기 성공이어서 서비스 기본 카메라 번호를 `20`으로 조정했다.
-- 2026-04-01: 이미 떠 있는 service에 새 unit 파일을 다시 적용하려면 `enable --now`만으로는 부족하다는 점을 확인했고, 설치 스크립트를 `daemon-reload -> enable -> restart` 순서로 보강했다.
-- 2026-04-01: `camera-id 20` 재적용 뒤 `api/status`의 `last_error`가 비어 있고 `last_frame_time`이 갱신되는 것을 확인했다.
+- 2026-04-01: OrangePI 카메라 probe 결과 초기에는 `20`이 열렸지만, 이후 USB 카메라가 `21`로 다시 잡히는 상황을 확인했다.
+- 2026-04-01: OrangePI 재점검 결과 `V4L2 + /dev/video21`과 `/dev/v4l/by-id/...video-index0` 경로에서 읽기 성공을 확인했다.
+- 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 루프로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 수정했다.
+- 2026-04-01: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` CPU benchmark를 기록했고 현재 기준으로 `buffalo_s`와 `buffalo_sc`를 우선 비교 대상으로 본다.

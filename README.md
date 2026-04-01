@@ -9,6 +9,13 @@
 - 현재 상태, 전역 결정, 활성 체크리스트, 최근 로그는 `docs/logbook.md`가 맡는다.
 - 모듈별 상세 기준은 각 모듈 `README.md`가 맡는다.
 
+## 최종 산출물 형태
+
+- `conversion/`은 `InsightFace -> ONNX -> RKNN` 변환 경로와 여러 모델팩 산출물을 정리한다.
+- `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 얇은 표면이 된다.
+- `runtime/face_gallery_web_demo.py`는 사람이 LAN에서 열어 보는 실시간 web demo entry가 된다.
+- 따라서 개발 중에도 `wrapper를 제품`, `web demo를 검증 도구`로 보고 분리 상태를 유지한다.
+
 ## 현재 주경로
 
 1. 원본 `InsightFace` 모델과 입력 형식을 정리한다.
@@ -74,5 +81,6 @@
 - 이 프로젝트의 첫 번째 모듈 경계는 `conversion`과 `runtime` 두 개를 기준으로 유지한다.
 - wrapper가 주 제품이고 web demo는 검증과 시연 도구라는 구조를 유지한다.
 - CPU 경로에서는 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack의 detection, feature extraction, pipeline 시간을 먼저 기록한다.
-- 현재 개발 보드 `OrangePI RK3588`의 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`다.
+- 현재 개발 보드 `OrangePI RK3588`의 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`다.
+- 현재 OrangePI service 설치 스크립트는 USB 카메라를 `camera-source`로 자동 선택하며, 현재 보드 기준 주 카메라 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
 - 더 자세한 현재 작업 상태는 `docs/logbook.md`를 먼저 읽는다.

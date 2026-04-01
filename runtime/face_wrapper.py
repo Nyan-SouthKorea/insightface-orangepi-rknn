@@ -9,7 +9,7 @@ PY
 
 Full:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode webcam --camera-id 20 --gallery-dir runtime/gallery \
+    --capture-mode webcam --camera-source /dev/video21 --gallery-dir runtime/gallery \
     --model-pack buffalo_s --provider CPUExecutionProvider
 
 Main inputs:
