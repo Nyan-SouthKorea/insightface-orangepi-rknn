@@ -3,13 +3,13 @@
 Smoke:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
     --capture-mode webcam --camera-source /dev/video21 --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --provider CPUExecutionProvider
+    --model-pack buffalo_s --backend onnx --provider CPUExecutionProvider
 
 Full:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
     --capture-mode json --json-path cam_info.json --cam-key camera1 \
     --image-dir cam_images --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --provider CPUExecutionProvider
+    --model-pack buffalo_sc --backend rknn --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
   - `runtime/gallery/`: gallery user folders
@@ -31,8 +31,12 @@ import time
 
 import cv2
 import numpy as np
-import onnxruntime as ort
 from flask import Flask, Response, jsonify
+
+try:
+    import onnxruntime as ort
+except ImportError:
+    ort = None
 
 try:
     from .face_wrapper import FaceWrapper
@@ -79,6 +83,7 @@ HTML_INDEX = """<!doctype html>
         `입력: <code>${data.capture_mode}</code><br>` +
         `camera: <code>${data.camera_source}</code><br>` +
         `gallery 인원 수: <code>${data.gallery_count}</code><br>` +
+        `backend: <code>${data.backend}</code><br>` +
         `provider: <code>${data.provider}</code><br>` +
         `사용 가능한 ORT provider: <code>${data.available_providers.join(', ')}</code><br>` +
         `capture FPS: <code>${data.capture_fps}</code><br>` +
@@ -118,9 +123,11 @@ class FaceGalleryWebDemo:
         self.wrapper = FaceWrapper(
             gallery_dir=args.gallery_dir,
             model_pack=args.model_pack,
+            backend=args.backend,
             provider=args.provider,
             threshold=args.threshold,
             det_size=args.det_size,
+            model_zoo_root=args.model_zoo_root,
         )
 
         self.capture = None
@@ -256,8 +263,9 @@ class FaceGalleryWebDemo:
 
         summary_lines = [
             f"model={self.args.model_pack}",
+            f"backend={self.args.backend}",
             f"gallery={len(self.wrapper.recognizer.gallery)}",
-            f"provider={self.args.provider}",
+            f"provider={self.args.provider}" if self.args.backend == "onnx" else "provider=rknn-lite2",
             f"camera={self.camera_source}",
             f"capture_fps={self.capture_fps:.1f}",
             f"infer_fps={self.inference_fps:.1f}",
@@ -317,9 +325,10 @@ class FaceGalleryWebDemo:
         return {
             "capture_mode": self.args.capture_mode,
             "gallery_count": len(self.wrapper.recognizer.gallery),
-            "provider": self.args.provider,
+            "backend": self.args.backend,
+            "provider": self.args.provider if self.args.backend == "onnx" else "rknn-lite2",
             "camera_source": self.camera_source,
-            "available_providers": ort.get_available_providers(),
+            "available_providers": ort.get_available_providers() if ort is not None else [],
             "last_result_count": self.last_result_count,
             "last_frame_time": self.last_frame_time,
             "last_error": self.last_error,
@@ -349,9 +358,11 @@ def build_parser():
     parser.add_argument("--image-dir", default="cam_images")
     parser.add_argument("--gallery-dir", default="runtime/gallery")
     parser.add_argument("--model-pack", default="buffalo_s")
+    parser.add_argument("--backend", choices=["onnx", "rknn"], default="onnx")
     parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.7)
     parser.add_argument("--det-size", type=int, default=640)
+    parser.add_argument("--model-zoo-root")
     parser.add_argument("--inference-fps", type=int, default=8)
     parser.add_argument("--stream-fps", type=int, default=20)
     return parser

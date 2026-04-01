@@ -10,10 +10,11 @@ PY
 Full:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
     --capture-mode webcam --camera-source /dev/video21 --gallery-dir runtime/gallery \
-    --model-pack buffalo_s --provider CPUExecutionProvider
+    --model-pack buffalo_s --backend onnx --provider CPUExecutionProvider
 
 Main inputs:
   - `gallery_dir`: local gallery folder
+  - `backend`: `onnx` or `rknn`
   - webcam or json frames from caller code
 
 Main outputs:
@@ -24,8 +25,10 @@ from __future__ import annotations
 
 try:
     from .face_gallery_recognizer import FaceGalleryRecognizer
+    from .rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
 except ImportError:
     from face_gallery_recognizer import FaceGalleryRecognizer
+    from rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
 
 
 class FaceWrapper:
@@ -35,17 +38,31 @@ class FaceWrapper:
         self,
         gallery_dir: str,
         model_pack: str = "buffalo_s",
+        backend: str = "onnx",
         provider: str = "CPUExecutionProvider",
         threshold: float = 0.7,
         det_size: int = 640,
+        model_zoo_root: str | None = None,
     ):
-        self.recognizer = FaceGalleryRecognizer(
-            gallery_dir=gallery_dir,
-            model_pack=model_pack,
-            provider=provider,
-            threshold=threshold,
-            det_size=det_size,
-        )
+        self.backend = backend
+        if backend == "onnx":
+            self.recognizer = FaceGalleryRecognizer(
+                gallery_dir=gallery_dir,
+                model_pack=model_pack,
+                provider=provider,
+                threshold=threshold,
+                det_size=det_size,
+            )
+        elif backend == "rknn":
+            self.recognizer = RknnFaceGalleryRecognizer(
+                gallery_dir=gallery_dir,
+                model_pack=model_pack,
+                threshold=threshold,
+                det_size=det_size,
+                model_zoo_root=model_zoo_root,
+            )
+        else:
+            raise ValueError(f"지원하지 않는 backend 입니다: {backend}")
 
     def reload_gallery(self):
         return self.recognizer.reload_gallery()
