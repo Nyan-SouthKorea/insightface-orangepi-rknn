@@ -56,7 +56,7 @@
 - `<module>/results/`
   - 실제 대용량 로컬 실행 산출물
 - `assets/`
-  - root `README.md`가 직접 참조하는 프로젝트 전역 공용 자산과 프로젝트 전역 prompt/design 자산
+  - root `README.md`가 직접 참조하는 프로젝트 전역 공용 자산
 - `../secrets/README.local.md`
   - 비공개 원격, 비공개 자산, 자격증명, 외부 미러 운영의 로컬 전용 시작 문서
 
@@ -309,7 +309,6 @@
 - 시간이 지나며 누적되는 환경/보고서 문서는 각 모듈 `docs/` 아래에 둔다.
 - 자산 스크린샷, GIF, 동영상, 컨셉 이미지 같은 문서 자산도 가능하면 그 자산을 실제로 사용하는 모듈 `docs/assets/` 아래에 둔다.
 - 특정 모듈에 속하지 않는 프로젝트 전역 그림, 공용 구조 이미지처럼 root `README.md`가 직접 쓰는 자산은 `assets/` 아래에 둔다.
-- 특정 모듈 하나로 내리기 어려운 프로젝트 전역 이미지 생성 프롬프트, design board, prompt pack 문서도 `assets/prompts/YYMMDD_HHMM_이름.md` 형식으로 `assets/` 아래에 둔다.
 
 ### 10-2-3. 모듈 문서는 `README + logbook`를 기본으로 유지한다
 

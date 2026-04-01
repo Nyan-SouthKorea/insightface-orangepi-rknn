@@ -25,9 +25,9 @@
 - 실제 대용량 산출물은 모듈 내부 `results/` 아래에 둔다.
 - 장시간 변환과 실기기 benchmark는 smoke를 먼저 통과시킨다.
 - `OrangePI` SSH 접속 정보 같은 비공개 장치 자격 정보는 `../secrets/README.local.md`에 유지한다.
+- 로컬 git 저장소는 초기화되어 있다.
 - 아직 `tools/directory_inventory.py`가 없으므로, 초기 부트스트랩 단계에서는 `find`와 `rg --files` 기반의 shallow inventory로 대신하고 그 사실을 logbook에 남긴다.
 - 아직 `tools/logbook_archive_guard.py`가 없으므로, 초기 단계에서는 줄 수를 수동으로 확인한다.
-- 아직 git 저장소가 초기화되지 않았으므로, commit과 push 규칙은 저장소 초기화 뒤에 강제한다.
 
 ## 현재 활성 체크리스트
 
@@ -67,7 +67,7 @@
   - [ ] 변환 smoke 명령과 full 명령 초안 작성
   - [ ] 실기기 benchmark smoke 명령과 full 명령 초안 작성
   - [ ] 인벤토리 스크립트와 archive guard 스크립트 필요 여부 판단
-  - [ ] git 저장소 초기화 여부 결정
+  - [x] git 저장소 초기화 여부 결정
 
 ## Recent Logs
 
@@ -80,3 +80,5 @@
 - 2026-04-01: `git -C repo rev-parse --is-inside-work-tree` 확인 결과 아직 git 저장소가 초기화되지 않은 상태임을 다시 확인했다.
 - 2026-04-01: `../secrets/README.local.md`를 만들고 `OrangePI` SSH 접속 메모를 로컬 전용으로 기록했다.
 - 2026-04-01: `ssh orangepi@192.168.20.238 'hostname; whoami; uname -m'` smoke 결과 `orangepicm5`, `orangepi`, `aarch64`를 확인했다.
+- 2026-04-01: `assets/prompts`는 이전 LLM 작업 흔적으로 판단해 삭제 대상으로 정리하고, 이를 유도한 `AGENT` 문장도 함께 제거했다.
+- 2026-04-01: 로컬 git 저장소 초기화와 첫 push smoke는 완료 상태로 current truth를 갱신했다.
