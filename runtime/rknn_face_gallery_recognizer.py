@@ -125,7 +125,7 @@ class RknnLiteModel:
             raise RuntimeError(f"init_runtime 실패: {self.model_path} / code={ret}")
 
     def infer(self, tensor: np.ndarray):
-        return self.runtime.inference(inputs=[tensor])
+        return self.runtime.inference(inputs=[tensor], data_format="nhwc")
 
     def release(self):
         self.runtime.release()
@@ -138,8 +138,6 @@ class RknnScrfdDetector:
         input_shape = self.metadata.get("input_shape") or [1, 3, 640, 640]
         self.input_height = int(input_shape[2])
         self.input_width = int(input_shape[3])
-        self.input_mean = float(self.metadata.get("mean_values", [[127.5, 127.5, 127.5]])[0][0])
-        self.input_std = float(self.metadata.get("std_values", [[128.0, 128.0, 128.0]])[0][0])
         self.fmc = 3
         self.feat_stride_fpn = [8, 16, 32]
         self.num_anchors = 2
@@ -163,9 +161,7 @@ class RknnScrfdDetector:
         det_image = np.zeros((input_size[1], input_size[0], 3), dtype=np.uint8)
         det_image[:new_height, :new_width, :] = resized
 
-        rgb = cv2.cvtColor(det_image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        tensor = np.transpose(rgb, (2, 0, 1))[None, ...]
-        tensor = (tensor - self.input_mean) / self.input_std
+        tensor = cv2.cvtColor(det_image, cv2.COLOR_BGR2RGB)[None, ...]
         return tensor, det_scale
 
     def _anchor_centers(self, height: int, width: int, stride: int):
@@ -309,14 +305,10 @@ class RknnArcFaceRecognizer:
         input_shape = self.metadata.get("input_shape") or [1, 3, 112, 112]
         self.input_height = int(input_shape[2])
         self.input_width = int(input_shape[3])
-        self.input_mean = float(self.metadata.get("mean_values", [[127.5, 127.5, 127.5]])[0][0])
-        self.input_std = float(self.metadata.get("std_values", [[127.5, 127.5, 127.5]])[0][0])
         self.input_size = (self.input_width, self.input_height)
 
     def get_feat(self, image: np.ndarray):
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32)
-        tensor = np.transpose(rgb, (2, 0, 1))[None, ...]
-        tensor = (tensor - self.input_mean) / self.input_std
+        tensor = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)[None, ...]
         return self.model.infer(tensor)[0]
 
 
