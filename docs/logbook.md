@@ -10,17 +10,20 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `face-only` 웹 데모, `ONNX Runtime CPU` benchmark 기록, OrangePI service 안정화 단계다.
+- 현재 단계는 `1차 RKNN 변환 성공 -> SDK화 -> 새 web demo` 큰 실행의 시작 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
-- 최종 산출물 방향은 `SDK처럼 import하는 wrapper`와 `별도 web demo`를 분리하는 구조로 고정했다.
+- 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web demo`를 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
 - 현재 reference 소스는 `/tmp/jetson-face-speaker-recognition`에 임시 clone해 둔 상태다.
 - ONNX CPU 검증용 venv 이름은 `../envs/ifr_ort_cpu_probe`로 확정했다.
 - 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
 - 현재 `OrangePI` 서비스는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
 - 현재 OrangePI live status 기준 웹 데모는 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0` 상태로 응답한다.
-- 아직 확정되지 않은 항목은 첫 번째 RKNN 타깃 모델팩, 호스트 변환 환경 버전표, RKNN smoke 기준값이다.
-- 아직 없는 항목은 변환 스크립트, 인벤토리 스크립트, logbook archive 스크립트, RKNN 실기기 entry script다.
+- 첫 번째 RKNN 타깃은 `buffalo_sc`로 잠정 확정했다.
+- host RKNN 변환 환경은 `../envs/ifr_rknn_host_cp310`, OrangePI RKNN Lite2 환경은 `../envs/ifr_rknn_lite2_cp310`으로 잡았다.
+- `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 host `FP16 RKNN export`는 성공했다.
+- 아직 확정되지 않은 항목은 RKNN smoke 기준값, 새 web demo 기술 스택, 최종 model zoo metadata 형식이다.
+- 아직 없는 항목은 실제 RKNN 파이프라인 wrapper, 새 web demo front / back 코드다.
 
 ## 현재 전역 결정
 
@@ -38,10 +41,14 @@
 - 공식 Rockchip `rknn-toolkit2`와 `rknpu2` 문서 기준 RK3588 NPU 사용 경로는 `ONNX 등 원본 모델 -> RKNN 변환 -> RKNN Runtime/Lite2 추론`이다.
 - 따라서 `OrangePI RK3588`에서 `별도 RKNN 변환 없이 ONNX Runtime만으로 Rockchip NPU 가속`을 쓰는 경로는 현재 기준으로 공식 지원 경로로 보지 않는다.
 - 필요하면 ONNX Runtime은 CPU 검증 경로로만 별도 유지하고, 실시간 목표 경로는 RKNN 변환을 기본으로 잡는다.
+- host 변환 환경은 `RKNN Toolkit2 2.3.2 + Python 3.10`으로 고정한다.
+- host 변환 환경은 `setuptools 75.8.0`, `onnx 1.16.1`까지 함께 고정해야 실제 변환이 된다.
 - 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
 - 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
-- 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 시연 도구`다.
+- 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 운영 인터페이스`다.
 - 현재 웹 데모는 `capture thread`, `inference thread`, `render thread`를 분리해 스트리밍 끊김을 줄이는 구조로 유지한다.
+- 최종 web demo는 `front / back`을 분리하고, 실시간 FPS와 상태는 웹 화면에서 그린다.
+- 최종 web demo는 `모델 전환`, `gallery 등록`, `다중 이미지 추가`, `삭제`, `촬영 저장`을 지원해야 한다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 - 아직 `tools/directory_inventory.py`가 없으므로, 초기 부트스트랩 단계에서는 `find`와 `rg --files` 기반의 shallow inventory로 대신하고 그 사실을 logbook에 남긴다.
 - 아직 `tools/logbook_archive_guard.py`가 없으므로, 초기 단계에서는 줄 수를 수동으로 확인한다.
@@ -63,57 +70,59 @@
 ## 현재 활성 체크리스트
 
 - 이번 실행의 목표
-  - CPU benchmark 결과를 canonical 문서에 반영한다.
-  - OrangePI service가 재부팅 뒤에도 같은 IP와 안정된 카메라 source로 올라오게 유지한다.
-  - wrapper와 web demo 분리 원칙을 `README`에 명확히 고정한다.
+  - `buffalo_sc`의 detection과 recognition을 `RKNN`으로 실제 성공시킨다.
+  - 성공 경로를 문서와 스크립트에 재현 가능하게 고정한다.
+  - 같은 구조를 나머지 모델팩 확장과 SDK화, 새 web demo까지 이어지게 만든다.
 - 이번 실행의 비범위
-  - 실제 RKNN 변환 코드 작성
-  - RK3588 NPU benchmark 수치 확정
-  - reference 저장소 전체 이식
+  - speaker 경로 재도입
+  - 기존 CPU-only demo를 최종 demo로 유지하는 일
 - 수정 대상 파일과 역할
-  - `README.md`: 프로젝트 제품 방향과 고정 메모
-  - `docs/logbook.md`: 전역 truth, benchmark 요약, 최근 로그
-  - `runtime/README.md`: wrapper와 web demo 역할 분리, service 실행 기준
-  - `runtime/docs/logbook.md`: 모듈 benchmark 상세와 다음 단계
-  - `runtime/image_capture.py`: 숫자 인덱스와 장치 경로를 모두 받는 camera source helper
-  - `runtime/face_gallery_web_demo.py`: 분리된 실시간 루프, FPS 표시, 빨간색 상단 글씨
-  - `runtime/insightface_gallery_web.service.template`: camera source 기반 service 실행
-  - `runtime/install_orangepi_service.sh`: OrangePI에서 stable camera source 자동 선택
+  - `README.md`: 최종 제품 방향과 고정 메모
+  - `docs/logbook.md`: 전역 truth와 큰 실행 체크리스트
+  - `conversion/README.md`: RKNN 변환 경로와 산출물 기준
+  - `conversion/docs/logbook.md`: 1차 변환 체크리스트와 recent logs
+  - `runtime/README.md`: SDK 표면과 새 web demo 방향
+  - `runtime/docs/logbook.md`: runtime 측 준비와 새 demo 체크리스트
+  - `conversion/*.py`, `conversion/*.sh`: 변환 smoke와 full entry
+  - `runtime/*.py`, `runtime/*`: RKNN 추론, SDK, web demo, service
 - 생성되거나 갱신되는 산출물 경로
-  - `../envs/ifr_ort_cpu_probe`
-  - `runtime/results/260401_1530_ort_cpu_benchmark/summary.json`
+  - `conversion/results/model_zoo/rk3588/buffalo_sc/*`
+  - `conversion/results/model_zoo/*`
+  - `runtime/results/<timestamp>_rknn_*`
   - `/etc/systemd/system/insightface_gallery_web.service`
 - 다음 단계 연결
-  - `runtime/`은 실제 gallery 사용자 이미지를 넣고 인식 품질을 보는 단계로 이어진다.
-  - `conversion/`은 첫 번째 타깃 모델팩을 정하고 `InsightFace -> ONNX -> RKNN` smoke 정의로 이어진다.
+  - `conversion/`에서 나온 `RKNN` 산출물은 `runtime/` SDK와 web demo가 직접 사용한다.
+  - 새 web demo의 모델 전환 UI는 `conversion/results/model_zoo` metadata를 읽는다.
+  - gallery 관리 UI는 `runtime/gallery/` 구조와 직접 연결된다.
 - 검증 방법과 완료 조건
-  - Python 파일이 문법 오류 없이 compile된다.
-  - OrangePI service가 `camera-source` 기준으로 다시 올라온다.
-  - LAN `api/status`에서 `capture_fps`, `inference_fps`, `stream_fps`가 확인된다.
-  - benchmark 표가 canonical logbook에 기록된다.
+  - 첫 번째 `buffalo_sc` RKNN 변환이 재현 가능한 스크립트로 성공한다.
+  - OrangePI에서 detection과 recognition이 실제로 동작한다.
+  - 성공 경로가 문서에 절차와 입력, 출력, 제약까지 함께 기록된다.
+  - 새 SDK 표면과 새 web demo 구조가 서로 분리된 채 연결된다.
 - 체크리스트
   - [x] reference 저장소 clone과 구조 확인
   - [x] face 경로와 speaker 경로 분기 지점 확인
   - [x] RK3588 ONNX Runtime 공식 지원 범위 확인
   - [x] shallow inventory로 현재 repo 경로 확인
-  - [x] `face-only runtime` 초안 구조를 현재 repo에 반영
   - [x] ONNX 검증용 venv 이름 확정
   - [x] ONNX 검증용 venv 생성
-  - [x] OrangePI 설치 smoke
-  - [x] OrangePI 서비스 smoke
-  - [x] 같은 네트워크 PC 접속 확인
   - [x] buffalo 모델팩 CPU benchmark 기록
-  - [x] wrapper와 web demo 분리 방향을 `README`에 반영
   - [x] OrangePI 고정 IP 설정
-  - [x] 웹 데모 스트리밍과 추론 루프 분리
-  - [x] 웹 데모 FPS 표시와 빨간색 상단 글씨 반영
-  - [x] stable camera source 기반 OrangePI service 재검증
-  - [ ] 첫 번째 타깃 `InsightFace` 모델 조합 확정
-  - [ ] 호스트 환경과 `OrangePI RK3588` 실기기 환경 표 작성
-  - [ ] 변환 smoke 명령과 full 명령 초안 작성
-  - [ ] RKNN model zoo wrapper 표면 초안 작성
-  - [ ] RKNN 실기기 benchmark smoke 명령과 full 명령 초안 작성
-  - [ ] 인벤토리 스크립트와 archive guard 스크립트 필요 여부 판단
+  - [x] 기존 CPU demo 안정화
+  - [x] 첫 번째 RKNN 타깃을 `buffalo_sc`로 잠정 확정
+  - [x] RKNN Toolkit2 공식 경로와 host 환경 제약 확인
+  - [x] `buffalo_sc` 입력 구조와 변환 대상 파일 확정
+  - [x] `buffalo_sc det_500m` RKNN smoke 변환
+  - [x] `buffalo_sc w600k_mbf` RKNN smoke 변환
+  - [ ] OrangePI RKNN Runtime smoke 구성
+  - [ ] `buffalo_sc` 실기기 추론 성공
+  - [ ] 성공 절차 문서화
+  - [ ] 나머지 모델팩 full 변환 계획 확정
+  - [ ] RKNN model zoo wrapper 표면 구현
+  - [ ] 새 web demo front / back 구조 설계
+  - [ ] 새 web demo의 모델 전환 UI 구현
+  - [ ] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
+  - [ ] 최종 service 정리와 전체 문서 마감
 
 ## Recent Logs
 
@@ -139,3 +148,8 @@
 - 2026-04-01: OrangePI LAN 연결을 `nmcli`로 manual 고정 IP로 전환해 재부팅 뒤에도 `192.168.20.238`을 유지하게 설정했다.
 - 2026-04-01: OrangePI CPU benchmark를 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack으로 측정했고, 현재 기준 균형점은 `buffalo_s`, 최대 경량 후보는 `buffalo_sc`로 우선 판단했다.
 - 2026-04-01: 최신 commit pull 뒤 `insightface_gallery_web.service`를 다시 설치했고, `camera-source=/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`, `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `last_error=""` 상태를 확인했다.
+- 2026-04-01: 사용자가 `에이전트 모드`를 선언했고, 큰 실행 순서를 `1차 RKNN 변환 성공 -> 전체 모델 확장 -> SDK화 -> 새 web demo`로 고정했다.
+- 2026-04-01: 1차 RKNN 타깃은 가장 작은 `buffalo_sc`로 잡고 `det_500m`, `w600k_mbf`부터 성공시키기로 했다.
+- 2026-04-01: host에 `RKNN Toolkit2 2.3.2 cp310` 환경을 만들었고, 실제 동작을 위해 `setuptools 75.8.0`, `onnx 1.16.1` 고정이 필요함을 확인했다.
+- 2026-04-01: OrangePI에 `RKNN Lite2 2.3.2 cp310` 환경을 만들었고 `rknnlite.api.RKNNLite` import를 확인했다.
+- 2026-04-01: `export_insightface_rknn.py`로 `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 `FP16 RKNN` export를 host에서 성공했다.

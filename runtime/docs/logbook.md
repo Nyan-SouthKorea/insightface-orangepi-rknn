@@ -14,10 +14,12 @@
 - 웹 데모는 현재 `capture`, `inference`, `render` 루프를 분리한 구조로 갱신했다.
 - overlay에는 `capture_fps`, `infer_fps`, `stream_fps`를 함께 표시한다.
 - 앱 코드가 import하는 표면은 `runtime.face_wrapper.FaceWrapper`로 유지한다.
-- 현재 목적은 실제 gallery 이미지를 넣고, 선택할 모델팩을 CPU 기준표로 결정한 뒤, 같은 표면으로 RKNN backend를 붙이는 것이다.
+- 현재 목적은 첫 번째 RKNN 경로를 붙인 뒤, 같은 표면을 `RKNN face SDK`로 승격하고, 새 `front / back` 분리형 web demo를 만드는 것이다.
 - 현재 venv 이름은 `../envs/ifr_ort_cpu_probe`로 고정했다.
+- RKNN Lite2 실기기 venv 이름은 `../envs/ifr_rknn_lite2_cp310`로 고정했다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이고, 장치 번호는 현재 `/dev/video21`이다.
 - 현재 live status 기준 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0`, `last_error=""`를 확인했다.
+- `runtime/probe_rknn_lite2.py`를 추가했고, 다음 단계는 host에서 만든 `buffalo_sc` RKNN 산출물을 OrangePI에서 smoke하는 것이다.
 
 ## 현재 모듈 결정
 
@@ -26,9 +28,11 @@
 - 큰 산출물은 `runtime/results/` 아래에 둔다.
 - 현재 `face-only` 웹 데모는 CPU 검증 경로로 먼저 세운다.
 - `ONNX Runtime`은 검증용 CPU 경로로 두고, RK3588 NPU 실시간 주경로는 이후 `RKNN`으로 옮긴다.
+- OrangePI 단건 RKNN smoke는 우선 `probe_rknn_lite2.py`와 파일 입력으로 닫는다.
 - gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
+- 최종 web demo는 `backend API`와 `frontend UI`를 분리한다.
 
 ## 현재 CPU benchmark 상세
 
@@ -60,10 +64,17 @@
 - [x] FPS 표시 추가
 - [x] 빨간색 상단 글씨 반영
 - [x] stable camera source 기반 service 설치 구조 반영
-- [ ] 실제 gallery 사용자 이미지 입력 후 인식 품질 확인
-- [ ] 첫 번째 기본 모델팩 확정
+- [x] OrangePI `RKNN Lite2` venv 생성 스크립트 작성
+- [x] RKNN runtime smoke entry script 초안 작성
+- [ ] `buffalo_sc` RKNN backend 연결
+- [ ] RKNN SDK 공용 표면 초안 작성
+- [ ] 새 web demo back 구조 설계
+- [ ] 새 web demo front 구조 설계
+- [ ] 모델 전환 UI 구현
+- [ ] gallery 등록 / 삭제 / 촬영 API 구현
+- [ ] gallery 등록 / 삭제 / 촬영 UI 구현
 - [ ] wrapper API에 RKNN backend 선택 표면 추가
-- [ ] RKNN runtime smoke entry script 초안 작성
+- [ ] OrangePI `RKNN Lite2` smoke 성공
 
 ## Recent Logs
 
@@ -81,3 +92,6 @@
 - 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 루프로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 수정했다.
 - 2026-04-01: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` CPU benchmark를 기록했고 현재 기준으로 `buffalo_s`와 `buffalo_sc`를 우선 비교 대상으로 본다.
 - 2026-04-01: 최신 commit을 OrangePI에 pull한 뒤 service를 다시 설치했고, `camera-source=/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0` 기준으로 `api/status`의 FPS 필드가 실제 값으로 갱신되는 것을 확인했다.
+- 2026-04-01: 에이전트 모드 전환 뒤 runtime의 다음 목표를 `RKNN face SDK`와 `front / back 분리형 새 web demo`로 확장했다.
+- 2026-04-01: OrangePI에 `../envs/ifr_rknn_lite2_cp310`을 만들었고 `rknnlite.api.RKNNLite` import를 확인했다.
+- 2026-04-01: `probe_rknn_lite2.py`를 추가해 `.rknn` 단건 파일 입력 smoke 경로를 만들었다.

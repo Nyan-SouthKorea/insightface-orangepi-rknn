@@ -12,9 +12,10 @@
 ## 최종 산출물 형태
 
 - `conversion/`은 `InsightFace -> ONNX -> RKNN` 변환 경로와 여러 모델팩 산출물을 정리한다.
-- `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 얇은 표면이 된다.
-- `runtime/face_gallery_web_demo.py`는 사람이 LAN에서 열어 보는 실시간 web demo entry가 된다.
-- 따라서 개발 중에도 `wrapper를 제품`, `web demo를 검증 도구`로 보고 분리 상태를 유지한다.
+- `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 얇은 표면이 아니라, 최종적으로 `RKNN face SDK`의 공용 import 표면으로 승격한다.
+- `runtime/face_gallery_web_demo.py`는 현재 1차 CPU 검증용 demo이고, 이후에는 `front / back`이 분리된 새 web demo로 교체한다.
+- 새 web demo는 모델 전환, 실시간 상태 표시, gallery 등록과 삭제, 사용자 촬영과 다중 이미지 관리까지 포함한 운영 인터페이스를 목표로 한다.
+- 따라서 개발 중에도 `wrapper를 제품`, `web demo를 검증 도구이자 운영 인터페이스`로 보고 분리 상태를 유지한다.
 
 ## 현재 주경로
 
@@ -25,7 +26,9 @@
 5. `RKNN` 산출물을 만든다.
 6. `OrangePI RK3588`에 배치한다.
 7. 실기기에서 단건 추론, 반복 추론, 카메라 입력, 지연 시간과 초당 처리 수를 확인한다.
-8. 기준을 통과한 산출물만 canonical 경로로 승격한다.
+8. 첫 번째 성공 경로를 정확히 문서화한다.
+9. 나머지 `InsightFace` 모델팩을 같은 방식으로 `RKNN`으로 확장한다.
+10. `RKNN face SDK`와 분리형 web demo를 완성한다.
 
 ## 저장소 구조
 
@@ -79,8 +82,11 @@
 - 장시간 변환, 양자화 검증, 실기기 benchmark는 smoke를 먼저 통과시킨 뒤 full run으로 넘어간다.
 - 새 실행 파일은 상단 주석이나 docstring에 smoke 명령, full 명령, 주요 인자, 입력 경로, 출력 경로를 남긴다.
 - 이 프로젝트의 첫 번째 모듈 경계는 `conversion`과 `runtime` 두 개를 기준으로 유지한다.
-- wrapper가 주 제품이고 web demo는 검증과 시연 도구라는 구조를 유지한다.
+- wrapper가 주 제품이고 web demo는 검증과 운영 인터페이스라는 구조를 유지한다.
 - CPU 경로에서는 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack의 detection, feature extraction, pipeline 시간을 먼저 기록한다.
+- 1차 RKNN 타깃은 `buffalo_sc`로 두고, `det_500m`과 `w600k_mbf`를 먼저 성공시킨다.
+- 최종 web demo는 `front / back`을 분리하고, 이미지 위에 직접 글자를 그리는 방식 대신 웹 UI로 상태를 표시한다.
+- 최종 web demo는 모델 전환, gallery 등록, 다중 이미지 추가, 삭제, 촬영 저장까지 지원해야 한다.
 - 현재 개발 보드 `OrangePI RK3588`의 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`다.
 - 현재 OrangePI service 설치 스크립트는 USB 카메라를 `camera-source`로 자동 선택하며, 현재 보드 기준 주 카메라 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
 - 더 자세한 현재 작업 상태는 `docs/logbook.md`를 먼저 읽는다.

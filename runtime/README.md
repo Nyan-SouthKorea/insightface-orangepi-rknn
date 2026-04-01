@@ -5,13 +5,14 @@
 - 이 모듈은 `OrangePI RK3588`에서 얼굴 인식 런타임을 실기기 기준으로 정리한다.
 - 현재 첫 구현 목표는 `face-only` 웹 데모와 `ONNX Runtime CPU` 검증 경로를 먼저 닫는 것이다.
 - 이후 `RKNN` 주경로가 준비되면 같은 입력과 같은 gallery 규칙 위에 실행 backend만 교체한다.
-- 최종 목표는 `앱 코드가 import하는 wrapper`와 `별도 web demo`를 분리해 유지하는 것이다.
+- 최종 목표는 `앱 코드가 import하는 RKNN face SDK`와 `front / back이 분리된 별도 web demo`를 분리해 유지하는 것이다.
 
 ## 현재 사용 형태
 
 - 앱 코드에서는 `runtime.face_wrapper.FaceWrapper`를 import해서 바로 쓴다.
 - 운영 확인과 시연은 `runtime/face_gallery_web_demo.py`를 별도 프로세스로 띄운다.
 - 즉 이 모듈은 처음부터 `wrapper`와 `web demo`를 분리된 진입점으로 유지한다.
+- 이후 새 web demo는 `backend API`와 `frontend UI`를 분리해 유지보수가 쉬운 구조로 다시 만든다.
 
 ```python
 from runtime import FaceWrapper
@@ -82,11 +83,15 @@ results = wrapper.infer(frame)
 
 - 현재 웹 데모는 `face-only` 경로만 유지하고 speaker 경로는 넣지 않는다.
 - 현재 첫 backend는 `ONNX Runtime CPUExecutionProvider`다.
+- `RKNN Lite2` 실기기 smoke 환경은 `../envs/ifr_rknn_lite2_cp310`로 고정한다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
 - 현재 OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
 - 웹 데모는 `capture`, `inference`, `render` 루프를 분리해 스트리밍 끊김을 줄인다.
 - 상단 overlay에는 `capture_fps`, `infer_fps`, `stream_fps`를 표시하고 글씨는 빨간색으로 유지한다.
+- 최종 web demo는 이미지 위에 직접 글자를 그리지 않고, 웹 UI 레이어에서 FPS와 상태를 표시한다.
+- 최종 web demo는 `모델 전환`, `gallery 등록`, `다중 이미지 추가`, `삭제`, `촬영 저장`을 지원한다.
+- 최종 SDK는 `model zoo`, `gallery`, `detector`, `recognizer`, `pipeline`이 분리된 표면으로 묶는다.
 - 실기기 smoke는 카메라 입력보다 파일 입력 경로를 먼저 닫되, 웹 데모는 동일 entry script에서 `webcam/json` 둘 다 받는다.
 - benchmark는 최소 `지연 시간`과 `초당 처리 수`를 함께 기록한다.
 - 앱 코드가 쓰는 wrapper와 사람이 보는 web demo는 별도 파일로 유지한다.
@@ -106,8 +111,12 @@ results = wrapper.infer(frame)
   - buffalo 모델팩 CPU benchmark
 - `runtime/setup_orangepi_ort_cpu_env.sh`
   - `../envs/ifr_ort_cpu_probe` 생성과 CPU provider 확인
+- `runtime/setup_orangepi_rknn_lite2_env.sh`
+  - `../envs/ifr_rknn_lite2_cp310` 생성과 `RKNNLite` import 확인
 - `runtime/install_orangepi_service.sh`
   - `insightface_gallery_web.service` 설치와 stable camera source 선택
+- `runtime/probe_rknn_lite2.py`
+  - OrangePI에서 `.rknn` 파일 단건 추론을 확인하는 smoke entry
 
 ## 관련 문서
 
