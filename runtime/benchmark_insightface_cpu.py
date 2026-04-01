@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import statistics
 import time
 from pathlib import Path
@@ -41,6 +42,21 @@ RELEASE_PACK_SIZE_MB = {
     "buffalo_m": 263.2,
     "buffalo_l": 275.3,
 }
+
+
+def normalize_model_pack_dir(model_pack: str, root: str = "~/.insightface") -> Path:
+    pack_dir = Path(root).expanduser() / "models" / model_pack
+    if any(pack_dir.glob("*.onnx")):
+        return pack_dir
+
+    nested_dirs = [path for path in pack_dir.iterdir() if path.is_dir()] if pack_dir.exists() else []
+    if len(nested_dirs) == 1 and any(nested_dirs[0].glob("*.onnx")):
+        for item in nested_dirs[0].iterdir():
+            target = pack_dir / item.name
+            if target.exists():
+                continue
+            shutil.move(str(item), str(target))
+    return pack_dir
 
 
 def summarize_ms(values: list[float]) -> dict[str, float]:
@@ -61,6 +77,7 @@ def build_face(bbox, kps, det_score):
 
 
 def benchmark_pack(image, model_pack: str, provider: str, det_size: int, warmup: int, repeat: int):
+    normalize_model_pack_dir(model_pack)
     app = FaceAnalysis(
         name=model_pack,
         providers=[provider],
@@ -106,6 +123,7 @@ def benchmark_pack(image, model_pack: str, provider: str, det_size: int, warmup:
 
     return {
         "model_pack": model_pack,
+        "status": "ok",
         "provider": provider,
         "release_pack_size_mb": RELEASE_PACK_SIZE_MB.get(model_pack),
         "detection_model_file": Path(det_model.model_file).name,
@@ -122,14 +140,20 @@ def benchmark_pack(image, model_pack: str, provider: str, det_size: int, warmup:
 
 def to_markdown(rows: list[dict]) -> str:
     lines = [
-        "| model pack | zip size MB | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |",
-        "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: |",
+        "| model pack | status | zip size MB | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |",
+        "| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
+        if row["status"] != "ok":
+            lines.append(
+                f"| {row['model_pack']} | {row['status']} | {row['release_pack_size_mb']} | - | - | - | - | - | - |"
+            )
+            continue
         lines.append(
-            "| {model_pack} | {release_pack_size_mb} | {detection_model_file} | {recognition_model_file} | "
+            "| {model_pack} | {status} | {release_pack_size_mb} | {detection_model_file} | {recognition_model_file} | "
             "{det_avg} | {rec_avg} | {pipe_avg} | {pipeline_fps} |".format(
                 model_pack=row["model_pack"],
+                status=row["status"],
                 release_pack_size_mb=row["release_pack_size_mb"],
                 detection_model_file=row["detection_model_file"],
                 recognition_model_file=row["recognition_model_file"],
@@ -162,16 +186,25 @@ def main():
 
     rows = []
     for model_pack in [item.strip() for item in args.model_packs.split(",") if item.strip()]:
-        rows.append(
-            benchmark_pack(
-                image=image,
-                model_pack=model_pack,
-                provider=args.provider,
-                det_size=args.det_size,
-                warmup=args.warmup,
-                repeat=args.repeat,
+        try:
+            rows.append(
+                benchmark_pack(
+                    image=image,
+                    model_pack=model_pack,
+                    provider=args.provider,
+                    det_size=args.det_size,
+                    warmup=args.warmup,
+                    repeat=args.repeat,
+                )
             )
-        )
+        except Exception as exc:
+            rows.append(
+                {
+                    "model_pack": model_pack,
+                    "status": f"error: {exc}",
+                    "release_pack_size_mb": RELEASE_PACK_SIZE_MB.get(model_pack),
+                }
+            )
 
     summary = {
         "image_path": args.image_path,
