@@ -26,8 +26,11 @@
 - OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
 - `buffalo_s`의 얼굴 인식 핵심 두 ONNX(`det_500m`, `w600k_mbf`)는 현재 host 기준으로 `buffalo_sc`와 SHA256이 완전히 같다.
 - 따라서 현재 face-only 범위의 실제 RKNN 변환 대상은 `buffalo_sc`, `buffalo_m`, `buffalo_l` 세 pack으로 본다.
+- host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN export`와 `pack.json` manifest까지 만들었다.
+- OrangePI에서 `FaceWrapper(backend="rknn")` 기준 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`도 gallery 1명 file-input end-to-end를 통과했다.
+- local SDK 표면으로 `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 추가했다.
 - 아직 확정되지 않은 항목은 RKNN smoke 기준값, 새 web demo 기술 스택, 최종 model zoo metadata 형식이다.
-- 아직 없는 항목은 새 web demo front / back 코드와 나머지 model pack의 RKNN full 변환 결과다.
+- 아직 없는 항목은 새 web demo front / back 코드와 SDK형 상위 구조 정리다.
 
 ## 현재 전역 결정
 
@@ -52,6 +55,9 @@
 - 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣어야 하고, 변환 시 넣은 `mean/std` 전처리를 runtime에서 다시 하지 않는다.
 - `buffalo_s`는 현재 face-only 주경로에서 `buffalo_sc`의 alias pack으로 취급하고, 별도 변환보다 metadata alias와 보조 모델 여부를 나눠 관리한다.
 - 나머지 실제 RKNN 변환 순서는 `buffalo_m` 다음 `buffalo_l`로 둔다.
+- canonical `RKNN model zoo`는 현재 tracked repo의 `conversion/results/model_zoo/rk3588/` 아래에 두고, OrangePI는 `git pull`로 같은 pack을 받는다.
+- `conversion/results/model_zoo/<platform>/<pack>/pack.json`은 runtime이 읽는 canonical pack manifest다.
+- `runtime.FaceSDK`는 현재 `FaceWrapper` 위의 안정된 import 이름이고, `list_model_packs()`로 future web demo backend가 pack 목록을 바로 읽게 한다.
 - 현재 첫 데모 형태는 `GUI`가 아니라 `LAN에서 볼 수 있는 웹 스트리밍`으로 고정한다.
 - 현재 첫 서비스 대상은 `runtime/face_gallery_web_demo.py`와 `insightface_gallery_web.service` 조합이다.
 - 현재 런타임 제품 방향은 `wrapper가 주 제품`, `web demo는 검증과 운영 인터페이스`다.
@@ -75,6 +81,18 @@
 | buffalo_s | 121.7 | det_500m.onnx | w600k_mbf.onnx | 50.60 | 27.01 | 160.37 | 6.24 |
 | buffalo_m | 263.2 | det_2.5g.onnx | w600k_r50.onnx | 152.80 | 318.90 | 635.75 | 1.57 |
 | buffalo_l | 275.3 | det_10g.onnx | w600k_r50.onnx | 573.89 | 429.12 | 1102.10 | 0.91 |
+
+## 현재 RKNN wrapper smoke 요약
+
+- 실행 위치: `OrangePI RK3588`, `../envs/ifr_rknn_lite2_cp310`
+- 입력 이미지: `runtime/results/face_benchmark_input.jpg`
+- gallery 입력: `/tmp/rknn_gallery_smoke_stage2/테스트, TestUser/face.jpg`
+
+| model pack | resolved pack | load ms | infer ms | top result | similarity | det score |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| buffalo_s | buffalo_sc | 659.93 | 54.20 | TestUser | 1.00 | 0.6807 |
+| buffalo_m | buffalo_m | 575.48 | 156.22 | TestUser | 1.00 | 0.6494 |
+| buffalo_l | buffalo_l | 4389.70 | 124.09 | TestUser | 1.00 | 0.6753 |
 
 ## 현재 활성 체크리스트
 
@@ -128,9 +146,11 @@
   - [x] 성공 절차 문서화
   - [x] 첫 RKNN wrapper 표면을 `FaceWrapper`에 연결
   - [x] 나머지 모델팩 full 변환 계획 확정
-  - [ ] `buffalo_m` RKNN smoke 변환과 실기기 smoke
-  - [ ] `buffalo_l` RKNN smoke 변환과 실기기 smoke
-  - [ ] 나머지 model pack을 RKNN wrapper 표면에 연결
+  - [x] `buffalo_m` RKNN smoke 변환과 실기기 smoke
+  - [x] `buffalo_l` RKNN smoke 변환과 실기기 smoke
+  - [x] 나머지 model pack을 RKNN wrapper 표면에 연결
+  - [x] `RKNN face SDK` 상위 package 구조 설계
+  - [ ] 새 web demo back API 초안 작성
   - [ ] 새 web demo front / back 구조 설계
   - [ ] 새 web demo의 모델 전환 UI 구현
   - [ ] 새 web demo의 gallery 등록 / 삭제 / 촬영 UI 구현
@@ -175,3 +195,7 @@
 - 2026-04-01: OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")`로 gallery 1명 file-input end-to-end를 다시 검증했고 `gallery_count 1`, `TestUser`, `similarity 1.0`, `det_score 0.6806640625`를 확인했다.
 - 2026-04-01: host 기준 `buffalo_s det_500m`, `buffalo_s w600k_mbf`의 SHA256이 `buffalo_sc`와 동일함을 확인했고, face-only 범위에서는 `buffalo_s`를 alias pack으로 취급하기로 했다.
 - 2026-04-01: `buffalo_m` 다운로드 중 zip 구조가 `buffalo_m/buffalo_m/*.onnx`로 한 단계 더 중첩되는 것을 확인했고, 이후 변환 스크립트는 nested pack 경로도 허용하도록 보강하기로 했다.
+- 2026-04-01: `conversion/export_insightface_pack_rknn.py`를 추가해 pack-level export와 `pack.json` manifest 생성, `buffalo_s` alias manifest 생성을 한 번에 처리하게 했다.
+- 2026-04-01: canonical `RKNN model zoo`를 `conversion/results/model_zoo/` 아래 tracked 산출물로 열어, host push 뒤 OrangePI pull로 동일 pack을 받는 흐름을 닫았다.
+- 2026-04-01: host에서 `buffalo_m`, `buffalo_l`의 `FP16 RKNN` export를 성공했고, OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 모두 `FaceWrapper(backend="rknn")` 기준 gallery 1명 file-input end-to-end를 통과했다.
+- 2026-04-01: `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 추가해 SDK-style import 이름과 model pack inventory 표면을 만들었다.

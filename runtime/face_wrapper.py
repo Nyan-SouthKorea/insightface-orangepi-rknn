@@ -23,6 +23,8 @@ Main outputs:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 def load_onnx_recognizer():
     try:
         from .face_gallery_recognizer import FaceGalleryRecognizer
@@ -53,6 +55,12 @@ class FaceWrapper:
         model_zoo_root: str | None = None,
     ):
         self.backend = backend
+        self.gallery_dir = Path(gallery_dir)
+        self.model_pack = model_pack
+        self.provider = provider
+        self.threshold = threshold
+        self.det_size = det_size
+        self.model_zoo_root = model_zoo_root
         if backend == "onnx":
             FaceGalleryRecognizer = load_onnx_recognizer()
             self.recognizer = FaceGalleryRecognizer(
@@ -79,3 +87,25 @@ class FaceWrapper:
 
     def infer(self, frame):
         return self.recognizer.recognize(frame)
+
+    @property
+    def gallery_count(self) -> int:
+        gallery = getattr(self.recognizer, "gallery", {})
+        return len(gallery)
+
+    def describe(self):
+        info = {
+            "backend": self.backend,
+            "model_pack": self.model_pack,
+            "gallery_dir": str(self.gallery_dir),
+            "gallery_count": self.gallery_count,
+            "threshold": self.threshold,
+            "det_size": self.det_size,
+        }
+        pack_info = getattr(self.recognizer, "pack_info", None)
+        if pack_info:
+            info["resolved_model_pack"] = pack_info.get("model_pack")
+            info["alias_of"] = pack_info.get("alias_of")
+            info["detector_path"] = str(pack_info.get("detector_path"))
+            info["recognizer_path"] = str(pack_info.get("recognizer_path"))
+        return info

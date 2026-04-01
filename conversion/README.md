@@ -4,7 +4,7 @@
 
 - 이 모듈은 `InsightFace` 계열 입력 모델을 `RKNN` 산출물로 변환하는 경로를 맡는다.
 - 목표는 `OrangePI RK3588`에서 바로 시험할 수 있는 작은 smoke 경로와 반복 가능한 full 변환 경로를 만드는 것이다.
-- 첫 번째 목표는 `buffalo_sc`의 `det_500m`과 `w600k_mbf`를 실제로 성공시키는 것이다.
+- 현재는 `buffalo_sc`, `buffalo_m`, `buffalo_l`의 face-only 핵심 모델을 `FP16 RKNN`으로 정리했고, `buffalo_s`는 alias pack manifest로 연결했다.
 
 ## 이 모듈이 맡는 것
 
@@ -63,7 +63,8 @@
 - host 변환 환경은 `../envs/ifr_rknn_host_cp310`로 고정하고, 현재 기준 `RKNN Toolkit2 2.3.2 + Python 3.10 + setuptools 75.8.0 + onnx 1.16.1` 조합을 유지한다.
 - 실행 가능한 스크립트는 상단 주석이나 docstring에 smoke 명령과 full 명령을 남긴다.
 - 실기기 경계는 `runtime/`이 맡고, 이 모듈은 변환 가능한 산출물을 안정적으로 넘겨주는 데 집중한다.
-- 성공한 산출물은 이후 `model zoo` metadata와 함께 정리해 `runtime`이 모델 전환 UI에서 읽게 만든다.
+- `conversion/export_insightface_pack_rknn.py`를 pack-level canonical entry로 두고, nested pack 경로도 여기서 정규화한다.
+- 성공한 산출물은 `pack.json`과 함께 정리해 `runtime`이 모델 전환 UI와 alias 해석에 읽게 만든다.
 
 ## 관련 문서
 

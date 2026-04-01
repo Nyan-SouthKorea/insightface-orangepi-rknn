@@ -110,3 +110,48 @@ def resolve_rknn_model_pack(
         "detector_meta": _load_metadata(detector_path),
         "recognizer_meta": _load_metadata(recognizer_path),
     }
+
+
+def list_rknn_model_packs(
+    target_platform: str = "rk3588",
+    model_zoo_root: str | Path | None = None,
+):
+    root = default_model_zoo_root() if model_zoo_root is None else Path(model_zoo_root)
+    platform_dir = root / target_platform
+    if not platform_dir.exists():
+        return []
+
+    items = []
+    for pack_dir in sorted(path for path in platform_dir.iterdir() if path.is_dir()):
+        pack_name = pack_dir.name
+        try:
+            info = resolve_rknn_model_pack(
+                model_pack=pack_name,
+                target_platform=target_platform,
+                model_zoo_root=root,
+            )
+        except Exception as error:
+            items.append(
+                {
+                    "model_pack": pack_name,
+                    "target_platform": target_platform,
+                    "pack_dir": pack_dir,
+                    "error": str(error),
+                }
+            )
+            continue
+
+        items.append(
+            {
+                "model_pack": pack_name,
+                "requested_model_pack": info.get("requested_model_pack", pack_name),
+                "resolved_model_pack": info["model_pack"],
+                "alias_of": info.get("alias_of"),
+                "target_platform": info["target_platform"],
+                "pack_dir": info["pack_dir"],
+                "detector_path": info["detector_path"],
+                "recognizer_path": info["recognizer_path"],
+                "pack_manifest": info.get("pack_manifest"),
+            }
+        )
+    return items

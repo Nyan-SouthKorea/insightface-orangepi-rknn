@@ -12,10 +12,12 @@
 ## 최종 산출물 형태
 
 - `conversion/`은 `InsightFace -> ONNX -> RKNN` 변환 경로와 여러 모델팩 산출물을 정리한다.
+- `runtime/face_sdk.py`와 `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 `RKNN face SDK` 표면을 맡는다.
 - `runtime/face_wrapper.py`는 앱 코드가 import해서 쓰는 얇은 표면이 아니라, 최종적으로 `RKNN face SDK`의 공용 import 표면으로 승격한다.
 - `runtime/face_gallery_web_demo.py`는 현재 1차 CPU 검증용 demo이고, 이후에는 `front / back`이 분리된 새 web demo로 교체한다.
 - 새 web demo는 모델 전환, 실시간 상태 표시, gallery 등록과 삭제, 사용자 촬영과 다중 이미지 관리까지 포함한 운영 인터페이스를 목표로 한다.
-- 현재 첫 `RKNN wrapper` 성공 경로는 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준으로 닫았다.
+- 현재 `FP16 RKNN` canonical pack은 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 네 이름으로 정리했다.
+- 현재 `RKNN wrapper` 성공 경로는 `FaceWrapper(backend="rknn")` 기준으로 위 네 pack 이름에서 모두 닫았다.
 - 따라서 개발 중에도 `wrapper를 제품`, `web demo를 검증 도구이자 운영 인터페이스`로 보고 분리 상태를 유지한다.
 
 ## 현재 주경로
@@ -75,6 +77,7 @@
 
 - 실제 실행 산출물은 root가 아니라 각 모듈 `results/` 아래에 둔다.
 - `conversion/results/`에는 `ONNX`, `RKNN`, 변환 metadata, 비교 요약을 둔다.
+- `conversion/results/model_zoo/<platform>/<pack>/pack.json`은 runtime이 pack 전환과 alias 해석에 읽는 canonical manifest다.
 - `runtime/results/`에는 benchmark 요약, 실기기 로그, 성능 측정 결과를 둔다.
 - smoke, debug, failed run 산출물은 문서화가 끝나면 삭제 가능한 임시 자산으로 본다.
 
@@ -86,6 +89,8 @@
 - wrapper가 주 제품이고 web demo는 검증과 운영 인터페이스라는 구조를 유지한다.
 - CPU 경로에서는 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack의 detection, feature extraction, pipeline 시간을 먼저 기록한다.
 - 1차 RKNN 타깃은 `buffalo_sc`로 두고, `det_500m`과 `w600k_mbf`를 먼저 성공시킨다.
+- 현재 face-only 범위의 distinct RKNN pack은 `buffalo_sc`, `buffalo_m`, `buffalo_l` 세 개로 보고, `buffalo_s`는 `buffalo_sc` alias pack으로 유지한다.
+- 현재 `conversion/export_insightface_pack_rknn.py`는 nested pack 경로를 허용하는 pack-level export entry이고, canonical 결과는 `conversion/results/model_zoo/rk3588/` 아래에 둔다.
 - 최종 web demo는 `front / back`을 분리하고, 이미지 위에 직접 글자를 그리는 방식 대신 웹 UI로 상태를 표시한다.
 - 최종 web demo는 모델 전환, gallery 등록, 다중 이미지 추가, 삭제, 촬영 저장까지 지원해야 한다.
 - 현재 개발 보드 `OrangePI RK3588`의 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`다.

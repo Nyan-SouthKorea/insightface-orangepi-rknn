@@ -22,6 +22,7 @@
 - `runtime/probe_rknn_lite2.py`를 추가했고, 다음 단계는 host에서 만든 `buffalo_sc` RKNN 산출물을 OrangePI에서 smoke하는 것이다.
 - OrangePI에서 `buffalo_sc det_500m_fp16.rknn`, `buffalo_sc w600k_mbf_fp16.rknn` 파일 입력 smoke는 실제로 성공했다.
 - OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")` 기준 gallery 1명 file-input end-to-end도 성공했다.
+- OrangePI에서 `FaceWrapper(backend="rknn")` 기준 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`도 gallery 1명 file-input end-to-end를 통과했다.
 
 ## 현재 모듈 결정
 
@@ -34,6 +35,8 @@
 - 현재 OrangePI Lite2 smoke env는 `RKNNLite + opencv-python-headless 4.10.0.84` 조합으로 유지한다.
 - 현재 OrangePI runtime은 `librknnrt 2.1.0`, driver `0.9.6`으로 보이며 toolkit `2.3.2` exported model과 warning은 남지만 smoke 추론은 통과한다.
 - 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std`를 runtime에서 다시 적용하지 않는다.
+- `runtime/rknn_model_zoo.py`는 현재 `pack.json` manifest와 alias를 읽어 `buffalo_s -> buffalo_sc` 같은 pack 선택을 해석한다.
+- `runtime.FaceSDK`는 현재 앱 코드와 future backend API가 공용으로 쓰는 SDK-style import 이름이다.
 - gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
@@ -70,6 +73,19 @@
   - static shape 모델이라 `query dynamic range` warning이 보이지만 현재 smoke 기준에서는 무시 가능했다.
   - exported model toolkit `2.3.2`와 OrangePI runtime `2.1.0` 사이 version warning이 남아 있다.
 
+## 현재 RKNN wrapper smoke 상세
+
+- 실행 위치: `OrangePI RK3588`
+- 실행 환경: `../envs/ifr_rknn_lite2_cp310`
+- 입력 이미지: `runtime/results/face_benchmark_input.jpg`
+- gallery 입력: `/tmp/rknn_gallery_smoke_stage2/테스트, TestUser/face.jpg`
+
+| model pack | resolved pack | load ms | infer ms | top result | similarity | det score |
+| --- | --- | ---: | ---: | --- | ---: | ---: |
+| buffalo_s | buffalo_sc | 659.93 | 54.20 | TestUser | 1.00 | 0.6807 |
+| buffalo_m | buffalo_m | 575.48 | 156.22 | TestUser | 1.00 | 0.6494 |
+| buffalo_l | buffalo_l | 4389.70 | 124.09 | TestUser | 1.00 | 0.6753 |
+
 ## 현재 활성 체크리스트
 
 - [x] `face-only` 얼굴 인식 모듈 초안 작성
@@ -95,7 +111,8 @@
 - [ ] gallery 등록 / 삭제 / 촬영 API 구현
 - [ ] gallery 등록 / 삭제 / 촬영 UI 구현
 - [x] wrapper API에 RKNN backend 선택 표면 추가
-- [ ] 나머지 model pack을 wrapper 표면에 연결
+- [x] 나머지 model pack을 wrapper 표면에 연결
+- [x] SDK 상위 package 구조 정리
 - [x] OrangePI `RKNN Lite2` smoke 성공
 
 ## Recent Logs
@@ -124,3 +141,6 @@
 - 2026-04-01: RKNN detector 점수가 비정상적으로 낮은 원인이 `float32 NCHW` 이중 전처리였음을 확인했고, `raw RGB uint8 NHWC` 입력으로 고쳤다.
 - 2026-04-01: NHWC 전환 뒤 detector grid shape 계산이 깨지던 문제를 `self.input_height`, `self.input_width` 기준으로 수정했다.
 - 2026-04-01: OrangePI에서 `FaceWrapper(backend="rknn", model_pack="buffalo_sc")`로 gallery 1명 file-input end-to-end를 검증했고 `TestUser`, `similarity 1.0`, `det_score 0.6806640625`를 확인했다.
+- 2026-04-01: `rknn_model_zoo.py`가 `pack.json`과 alias를 읽도록 보강했고, `buffalo_s`를 `buffalo_sc` alias로 해석하는 경로를 확인했다.
+- 2026-04-01: OrangePI에서 `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`를 `FaceWrapper(backend="rknn")`로 다시 검증했고 모두 `TestUser`, `similarity 1.0`을 확인했다.
+- 2026-04-01: `FaceSDK`와 `list_model_packs()`를 추가해 future web demo backend가 runtime model zoo를 직접 읽을 수 있는 상위 표면을 만들었다.

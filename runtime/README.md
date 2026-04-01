@@ -4,25 +4,25 @@
 
 - 이 모듈은 `OrangePI RK3588`에서 얼굴 인식 런타임을 실기기 기준으로 정리한다.
 - 현재 첫 구현 목표는 `face-only` 웹 데모와 `ONNX Runtime CPU` 검증 경로를 먼저 닫는 것이다.
-- 현재는 첫 `RKNN` 주경로인 `buffalo_sc + FaceWrapper(backend="rknn")`를 실기기에서 닫았고, 이후 같은 규칙으로 model zoo를 확장한다.
+- 현재는 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 네 pack 이름을 `FaceWrapper(backend="rknn")`로 실기기에서 확인했다.
 - 최종 목표는 `앱 코드가 import하는 RKNN face SDK`와 `front / back이 분리된 별도 web demo`를 분리해 유지하는 것이다.
 
 ## 현재 사용 형태
 
-- 앱 코드에서는 `runtime.face_wrapper.FaceWrapper`를 import해서 바로 쓴다.
+- 앱 코드에서는 `runtime.FaceSDK` 또는 `runtime.face_wrapper.FaceWrapper`를 import해서 바로 쓴다.
 - 운영 확인과 시연은 `runtime/face_gallery_web_demo.py`를 별도 프로세스로 띄운다.
 - 즉 이 모듈은 처음부터 `wrapper`와 `web demo`를 분리된 진입점으로 유지한다.
 - 이후 새 web demo는 `backend API`와 `frontend UI`를 분리해 유지보수가 쉬운 구조로 다시 만든다.
 
 ```python
-from runtime import FaceWrapper
+from runtime import FaceSDK
 
-wrapper = FaceWrapper(
+sdk = FaceSDK(
     gallery_dir="runtime/gallery",
-    model_pack="buffalo_sc",
+    model_pack="buffalo_m",
     backend="rknn",
 )
-results = wrapper.infer(frame)
+results = sdk.infer(frame)
 ```
 
 ## 이 모듈이 맡는 것
@@ -86,6 +86,7 @@ results = wrapper.infer(frame)
 - `RKNN Lite2` 실기기 smoke 환경은 `../envs/ifr_rknn_lite2_cp310`로 고정한다.
 - `RKNN Lite2` 실기기 smoke 환경은 현재 `opencv-python-headless 4.10.0.84`까지 함께 설치한다.
 - `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std` 전처리는 runtime 내부 처리에 맡긴다.
+- `runtime/rknn_model_zoo.py`는 `conversion/results/model_zoo/<platform>/<pack>/pack.json`을 읽어 pack 파일과 alias를 해석한다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
 - 현재 OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
@@ -103,6 +104,8 @@ results = wrapper.infer(frame)
 
 - `runtime/face_wrapper.py`
   - import해서 쓰는 얇은 wrapper 표면
+- `runtime/face_sdk.py`
+  - 앱 코드와 future backend API가 공용으로 쓰는 SDK-style 표면
 - `runtime/face_gallery_web_demo.py`
   - `Flask` 기반 웹 스트리밍 데모
 - `runtime/face_gallery_recognizer.py`
@@ -122,7 +125,7 @@ results = wrapper.infer(frame)
 - `runtime/rknn_face_gallery_recognizer.py`
   - `buffalo_sc` 기준 첫 `RKNN` gallery 인식 파이프라인
 - `runtime/rknn_model_zoo.py`
-  - 변환된 `RKNN model pack` 경로와 metadata 해석 helper
+  - 변환된 `RKNN model pack` 경로, `pack.json`, alias metadata 해석 helper
 
 ## 관련 문서
 
