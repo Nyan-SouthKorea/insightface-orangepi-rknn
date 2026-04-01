@@ -27,9 +27,12 @@ source "${VENV_ROOT}/bin/activate"
 
 python -m pip install --upgrade pip setuptools wheel
 python -m pip install "${WHEEL_URL}"
+python -m pip install opencv-python-headless==4.10.0.84
 
 python - <<'PY'
+import cv2
 from rknnlite.api import RKNNLite
+print("opencv env ok:", cv2.__version__)
 print("rknn lite2 env ok:", RKNNLite)
 PY
 

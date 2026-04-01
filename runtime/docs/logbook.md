@@ -20,6 +20,7 @@
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이고, 장치 번호는 현재 `/dev/video21`이다.
 - 현재 live status 기준 `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `gallery_count 0`, `last_error=""`를 확인했다.
 - `runtime/probe_rknn_lite2.py`를 추가했고, 다음 단계는 host에서 만든 `buffalo_sc` RKNN 산출물을 OrangePI에서 smoke하는 것이다.
+- OrangePI에서 `buffalo_sc det_500m_fp16.rknn`, `buffalo_sc w600k_mbf_fp16.rknn` 파일 입력 smoke는 실제로 성공했다.
 
 ## 현재 모듈 결정
 
@@ -29,6 +30,8 @@
 - 현재 `face-only` 웹 데모는 CPU 검증 경로로 먼저 세운다.
 - `ONNX Runtime`은 검증용 CPU 경로로 두고, RK3588 NPU 실시간 주경로는 이후 `RKNN`으로 옮긴다.
 - OrangePI 단건 RKNN smoke는 우선 `probe_rknn_lite2.py`와 파일 입력으로 닫는다.
+- 현재 OrangePI Lite2 smoke env는 `RKNNLite + opencv-python-headless 4.10.0.84` 조합으로 유지한다.
+- 현재 OrangePI runtime은 `librknnrt 2.1.0`, driver `0.9.6`으로 보이며 toolkit `2.3.2` exported model과 warning은 남지만 smoke 추론은 통과한다.
 - gallery 로컬 자산은 `runtime/gallery/` 아래에 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
@@ -48,6 +51,22 @@
 | buffalo_s | 121.7 | det_500m.onnx | w600k_mbf.onnx | 50.60 | 27.01 | 160.37 | 6.24 |
 | buffalo_m | 263.2 | det_2.5g.onnx | w600k_r50.onnx | 152.80 | 318.90 | 635.75 | 1.57 |
 | buffalo_l | 275.3 | det_10g.onnx | w600k_r50.onnx | 573.89 | 429.12 | 1102.10 | 0.91 |
+
+## 현재 RKNN smoke 상세
+
+- OrangePI 환경 준비
+  - `bash runtime/setup_orangepi_rknn_lite2_env.sh`
+- detection smoke
+  - `source ../envs/ifr_rknn_lite2_cp310/bin/activate`
+  - `python runtime/probe_rknn_lite2.py --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn --input-image runtime/results/face_benchmark_input.jpg --model-kind detection --input-size 640,640`
+  - 결과 요약: `9`개 출력 tensor, 첫 세 출력 shape `12800x1`, `3200x1`, `800x1`
+- recognition smoke
+  - `source ../envs/ifr_rknn_lite2_cp310/bin/activate`
+  - `python runtime/probe_rknn_lite2.py --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn --input-image runtime/results/face_benchmark_input.jpg --model-kind recognition --input-size 112,112`
+  - 결과 요약: `1 x 512` 출력 tensor, 값 범위 `-0.6206 ~ 0.5732`
+- 현재 warning 메모
+  - static shape 모델이라 `query dynamic range` warning이 보이지만 현재 smoke 기준에서는 무시 가능했다.
+  - exported model toolkit `2.3.2`와 OrangePI runtime `2.1.0` 사이 version warning이 남아 있다.
 
 ## 현재 활성 체크리스트
 
@@ -74,7 +93,7 @@
 - [ ] gallery 등록 / 삭제 / 촬영 API 구현
 - [ ] gallery 등록 / 삭제 / 촬영 UI 구현
 - [ ] wrapper API에 RKNN backend 선택 표면 추가
-- [ ] OrangePI `RKNN Lite2` smoke 성공
+- [x] OrangePI `RKNN Lite2` smoke 성공
 
 ## Recent Logs
 
@@ -95,3 +114,6 @@
 - 2026-04-01: 에이전트 모드 전환 뒤 runtime의 다음 목표를 `RKNN face SDK`와 `front / back 분리형 새 web demo`로 확장했다.
 - 2026-04-01: OrangePI에 `../envs/ifr_rknn_lite2_cp310`을 만들었고 `rknnlite.api.RKNNLite` import를 확인했다.
 - 2026-04-01: `probe_rknn_lite2.py`를 추가해 `.rknn` 단건 파일 입력 smoke 경로를 만들었다.
+- 2026-04-01: OrangePI 첫 RKNN smoke에서 `cv2` 누락을 확인했고, Lite2 환경에 `opencv-python-headless 4.10.0.84`를 추가해 해결했다.
+- 2026-04-01: OrangePI에서 `det_500m_fp16.rknn` probe가 성공했고 `9`개 출력 tensor와 비영값 범위를 확인했다.
+- 2026-04-01: OrangePI에서 `w600k_mbf_fp16.rknn` probe가 성공했고 `1 x 512` 출력 tensor와 비영값 범위를 확인했다.

@@ -15,6 +15,7 @@
 - 현재 기준 실제 동작에 필요한 host 고정 조합은 `Python 3.10`, `setuptools 75.8.0`, `onnx 1.16.1`이다.
 - `conversion/export_insightface_rknn.py`, `conversion/setup_rknn_host_env.sh`, `conversion/requirements_rknn_host_cp310.txt`를 추가했다.
 - host에서 `buffalo_sc det_500m`, `buffalo_sc w600k_mbf`의 `FP16 RKNN export`를 각각 성공했다.
+- OrangePI로 두 `.rknn` 파일을 넘겨 `RKNN Lite2` smoke까지 실제 연결했다.
 - 아직 정하지 않은 항목은 `INT8` calibration 입력 묶음, canonical model zoo metadata 형식, 나머지 모델팩 확장 순서다.
 
 ## 현재 모듈 결정
@@ -36,10 +37,25 @@
 - [x] `buffalo_sc w600k_mbf` smoke 변환 명령 작성
 - [x] canonical 산출물 폴더 이름 규칙 초안 작성
 - [x] `runtime/`으로 넘길 최소 metadata 정의
-- [ ] 첫 번째 RKNN 성공 경로 문서화
+- [x] 첫 번째 RKNN 성공 경로 문서화
 - [ ] 나머지 모델팩 확장 순서 확정
-- [ ] OrangePI `RKNN Lite2` smoke 성공
+- [x] OrangePI `RKNN Lite2` smoke 성공
 - [ ] `INT8` calibration 경로 초안 작성
+
+## 현재 성공 경로
+
+- host 변환 환경 생성
+  - `bash conversion/setup_rknn_host_env.sh`
+- detection 변환
+  - `source ../envs/ifr_rknn_host_cp310/bin/activate`
+  - `python conversion/export_insightface_rknn.py --onnx-path ~/.insightface/models/buffalo_sc/det_500m.onnx --output-rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn --model-kind detection --input-shape 1,3,640,640 --inputs input.1 --target-platform rk3588 --dtype fp`
+- recognition 변환
+  - `source ../envs/ifr_rknn_host_cp310/bin/activate`
+  - `python conversion/export_insightface_rknn.py --onnx-path ~/.insightface/models/buffalo_sc/w600k_mbf.onnx --output-rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn --model-kind recognition --input-shape 1,3,112,112 --inputs input.1 --target-platform rk3588 --dtype fp`
+- current canonical 산출물
+  - `conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn`
+  - `conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn`
+  - 각 파일 옆 metadata json
 
 ## Recent Logs
 
@@ -50,3 +66,4 @@
 - 2026-04-01: `onnx 1.21.x`에서는 `onnx.mapping` 오류로 `load_onnx`가 실패했고, `onnx 1.16.1`로 고정해 해결했다.
 - 2026-04-01: `det_500m.onnx`와 `w600k_mbf.onnx`의 입력 이름은 둘 다 `input.1`로 확인했고, 동적 입력 ONNX는 첫 입력 이름을 자동으로 잡도록 export script를 보강했다.
 - 2026-04-01: `export_insightface_rknn.py`로 `buffalo_sc det_500m`과 `buffalo_sc w600k_mbf`의 `FP16 RKNN` export를 host에서 성공했고, metadata json도 함께 남기도록 했다.
+- 2026-04-01: host 산출물을 OrangePI `conversion/results/model_zoo/rk3588/buffalo_sc/`로 복사해 device smoke 입력 경로까지 닫았다.

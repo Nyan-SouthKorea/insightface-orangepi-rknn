@@ -84,6 +84,7 @@ results = wrapper.infer(frame)
 - 현재 웹 데모는 `face-only` 경로만 유지하고 speaker 경로는 넣지 않는다.
 - 현재 첫 backend는 `ONNX Runtime CPUExecutionProvider`다.
 - `RKNN Lite2` 실기기 smoke 환경은 `../envs/ifr_rknn_lite2_cp310`로 고정한다.
+- `RKNN Lite2` 실기기 smoke 환경은 현재 `opencv-python-headless 4.10.0.84`까지 함께 설치한다.
 - gallery 폴더 이름은 기본적으로 `한글이름, EnglishName` 형식을 권장한다.
 - 현재 OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
 - 현재 OrangePI USB 카메라의 stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
