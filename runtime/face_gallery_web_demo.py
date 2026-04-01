@@ -2,7 +2,7 @@
 
 Smoke:
   python runtime/face_gallery_web_demo.py --host 0.0.0.0 --port 5000 \
-    --capture-mode webcam --camera-id 0 --gallery-dir runtime/gallery \
+    --capture-mode webcam --camera-id 20 --gallery-dir runtime/gallery \
     --model-pack buffalo_s --provider CPUExecutionProvider
 
 Full:
@@ -23,6 +23,7 @@ Main outputs:
 from __future__ import annotations
 
 import argparse
+import copy
 import signal
 import threading
 import time
@@ -32,8 +33,12 @@ import numpy as np
 import onnxruntime as ort
 from flask import Flask, Response, jsonify
 
-from face_gallery_recognizer import FaceGalleryRecognizer
-from image_capture import JsonImageReader, open_webcam
+try:
+    from .face_wrapper import FaceWrapper
+    from .image_capture import JsonImageReader, open_webcam
+except ImportError:
+    from face_wrapper import FaceWrapper
+    from image_capture import JsonImageReader, open_webcam
 
 
 HTML_INDEX = """<!doctype html>
@@ -74,6 +79,9 @@ HTML_INDEX = """<!doctype html>
         `gallery 인원 수: <code>${data.gallery_count}</code><br>` +
         `provider: <code>${data.provider}</code><br>` +
         `사용 가능한 ORT provider: <code>${data.available_providers.join(', ')}</code><br>` +
+        `capture FPS: <code>${data.capture_fps}</code><br>` +
+        `inference FPS: <code>${data.inference_fps}</code><br>` +
+        `stream FPS: <code>${data.stream_fps}</code><br>` +
         `최근 결과 수: <code>${data.last_result_count}</code><br>` +
         `최근 프레임 시각: <code>${data.last_frame_time}</code>` + error;
     }
@@ -90,6 +98,7 @@ class FaceGalleryWebDemo:
         self.args = args
         self.stop_event = threading.Event()
         self.frame_lock = threading.Lock()
+        self.state_lock = threading.Lock()
 
         self.last_encoded_frame = self._encode_placeholder(
             "서비스 준비 중입니다. 잠시만 기다려 주세요."
@@ -97,8 +106,13 @@ class FaceGalleryWebDemo:
         self.last_result_count = 0
         self.last_frame_time = ""
         self.last_error = ""
+        self.capture_fps = 0.0
+        self.inference_fps = 0.0
+        self.stream_fps = 0.0
+        self.last_results = []
+        self.latest_raw_frame = None
 
-        self.recognizer = FaceGalleryRecognizer(
+        self.wrapper = FaceWrapper(
             gallery_dir=args.gallery_dir,
             model_pack=args.model_pack,
             provider=args.provider,
@@ -115,10 +129,15 @@ class FaceGalleryWebDemo:
                 image_dir=args.image_dir,
             )
 
-        self.worker = threading.Thread(target=self._worker_loop, daemon=True)
-        self.worker.start()
+        self.capture_worker = threading.Thread(target=self._capture_loop, daemon=True)
+        self.inference_worker = threading.Thread(target=self._inference_loop, daemon=True)
+        self.render_worker = threading.Thread(target=self._render_loop, daemon=True)
+        self.capture_worker.start()
+        self.inference_worker.start()
+        self.render_worker.start()
 
-    def _worker_loop(self):
+    def _capture_loop(self):
+        last_capture_ts = None
         while not self.stop_event.is_set():
             if self.args.capture_mode == "json":
                 ok, frame = self.json_reader.read()
@@ -151,21 +170,68 @@ class FaceGalleryWebDemo:
 
                 frame = cv2.flip(frame, 1)
 
+            now = time.perf_counter()
+            if last_capture_ts is not None:
+                interval = max(1e-6, now - last_capture_ts)
+                self.capture_fps = (self.capture_fps * 0.9) + ((1.0 / interval) * 0.1)
+            last_capture_ts = now
+
+            with self.state_lock:
+                self.latest_raw_frame = frame.copy()
+
+    def _inference_loop(self):
+        last_inference_ts = None
+        while not self.stop_event.is_set():
+            with self.state_lock:
+                frame = None if self.latest_raw_frame is None else self.latest_raw_frame.copy()
+
+            if frame is None:
+                time.sleep(0.03)
+                continue
+
             try:
-                results = self.recognizer.recognize(frame)
-                annotated = self._draw_results(frame, results)
-                encoded = self._encode_frame(annotated)
+                results = self.wrapper.infer(frame)
                 self.last_result_count = len(results)
                 self.last_frame_time = time.strftime("%Y-%m-%d %H:%M:%S")
                 self.last_error = ""
+                with self.state_lock:
+                    self.last_results = copy.deepcopy(results)
             except Exception as exc:
                 self.last_error = str(exc)
-                encoded = self._encode_placeholder(f"인식 중 오류: {exc}")
+                with self.state_lock:
+                    self.last_results = []
+
+            now = time.perf_counter()
+            if last_inference_ts is not None:
+                interval = max(1e-6, now - last_inference_ts)
+                self.inference_fps = (self.inference_fps * 0.9) + ((1.0 / interval) * 0.1)
+            last_inference_ts = now
+
+            time.sleep(max(0.0, 1.0 / max(1, self.args.inference_fps)))
+
+    def _render_loop(self):
+        last_render_ts = None
+        while not self.stop_event.is_set():
+            with self.state_lock:
+                frame = None if self.latest_raw_frame is None else self.latest_raw_frame.copy()
+                results = copy.deepcopy(self.last_results)
+
+            if frame is None:
+                encoded = self._encode_placeholder("입력 프레임 대기 중입니다.")
+            else:
+                annotated = self._draw_results(frame, results)
+                encoded = self._encode_frame(annotated)
 
             with self.frame_lock:
                 self.last_encoded_frame = encoded
 
-            time.sleep(max(0.0, 1.0 / max(1, self.args.max_fps)))
+            now = time.perf_counter()
+            if last_render_ts is not None:
+                interval = max(1e-6, now - last_render_ts)
+                self.stream_fps = (self.stream_fps * 0.9) + ((1.0 / interval) * 0.1)
+            last_render_ts = now
+
+            time.sleep(max(0.0, 1.0 / max(1, self.args.stream_fps)))
 
     def _draw_results(self, frame, results):
         drawn = frame.copy()
@@ -185,21 +251,25 @@ class FaceGalleryWebDemo:
                 cv2.LINE_AA,
             )
 
-        summary = (
-            f"gallery={len(self.recognizer.gallery)}  "
-            f"provider={self.args.provider}  "
-            f"model={self.args.model_pack}"
-        )
-        cv2.putText(
-            drawn,
-            summary,
-            (20, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (255, 255, 255),
-            2,
-            cv2.LINE_AA,
-        )
+        summary_lines = [
+            f"model={self.args.model_pack}",
+            f"gallery={len(self.wrapper.recognizer.gallery)}",
+            f"provider={self.args.provider}",
+            f"capture_fps={self.capture_fps:.1f}",
+            f"infer_fps={self.inference_fps:.1f}",
+            f"stream_fps={self.stream_fps:.1f}",
+        ]
+        for index, line in enumerate(summary_lines):
+            cv2.putText(
+                drawn,
+                line,
+                (20, 35 + (index * 28)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                (0, 0, 255),
+                2,
+                cv2.LINE_AA,
+            )
         return drawn
 
     def _encode_frame(self, frame):
@@ -239,12 +309,15 @@ class FaceGalleryWebDemo:
     def status_payload(self):
         return {
             "capture_mode": self.args.capture_mode,
-            "gallery_count": len(self.recognizer.gallery),
+            "gallery_count": len(self.wrapper.recognizer.gallery),
             "provider": self.args.provider,
             "available_providers": ort.get_available_providers(),
             "last_result_count": self.last_result_count,
             "last_frame_time": self.last_frame_time,
             "last_error": self.last_error,
+            "capture_fps": round(self.capture_fps, 2),
+            "inference_fps": round(self.inference_fps, 2),
+            "stream_fps": round(self.stream_fps, 2),
         }
 
     def shutdown(self):
@@ -258,7 +331,7 @@ def build_parser():
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5000)
     parser.add_argument("--capture-mode", choices=["webcam", "json"], default="webcam")
-    parser.add_argument("--camera-id", type=int, default=0)
+    parser.add_argument("--camera-id", type=int, default=20)
     parser.add_argument("--camera-width", type=int, default=1280)
     parser.add_argument("--camera-height", type=int, default=720)
     parser.add_argument("--camera-fps", type=int, default=30)
@@ -270,7 +343,8 @@ def build_parser():
     parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.7)
     parser.add_argument("--det-size", type=int, default=640)
-    parser.add_argument("--max-fps", type=int, default=15)
+    parser.add_argument("--inference-fps", type=int, default=8)
+    parser.add_argument("--stream-fps", type=int, default=20)
     return parser
 
 
