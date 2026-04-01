@@ -257,7 +257,7 @@
 
 ### 9-1. 로컬 워크스페이스 구조
 
-- 로컬 워크스페이스는 기본적으로 `repo / env / secrets` sibling 구조를 유지한다.
+- 로컬 워크스페이스는 기본적으로 `repo / envs / secrets` sibling 구조를 유지한다.
 - 민감한 운영 정보는 리포 바깥 `../secrets/`에 둔다.
 - 비공개 원격, 비공개 자산 업로드/동기화, 자격증명, 외부 미러 운영 세부는 tracked repo가 아니라 `../secrets/README.local.md`에서만 관리한다.
 
