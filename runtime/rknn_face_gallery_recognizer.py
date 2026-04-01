@@ -47,10 +47,12 @@ except ImportError:
     RKNNLite = None
 
 try:
-    from .gallery_utils import average_top_similarity, imread_local, parse_identity
+    from .gallery_store import GalleryStore
+    from .gallery_utils import average_top_similarity, imread_local
     from .rknn_model_zoo import resolve_rknn_model_pack
 except ImportError:
-    from gallery_utils import average_top_similarity, imread_local, parse_identity
+    from gallery_store import GalleryStore
+    from gallery_utils import average_top_similarity, imread_local
     from rknn_model_zoo import resolve_rknn_model_pack
 
 
@@ -297,6 +299,9 @@ class RknnScrfdDetector:
             order = order[inds + 1]
         return keep
 
+    def close(self):
+        self.model.release()
+
 
 class RknnArcFaceRecognizer:
     def __init__(self, model_path: str | Path, metadata: dict | None = None):
@@ -310,6 +315,9 @@ class RknnArcFaceRecognizer:
     def get_feat(self, image: np.ndarray):
         tensor = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)[None, ...]
         return self.model.infer(tensor)[0]
+
+    def close(self):
+        self.model.release()
 
 
 class RknnFaceGalleryRecognizer:
@@ -326,6 +334,7 @@ class RknnFaceGalleryRecognizer:
         self.threshold = threshold
         self.det_size = det_size
         self.gallery_dir.mkdir(parents=True, exist_ok=True)
+        self.gallery_store = GalleryStore(self.gallery_dir)
 
         pack_info = resolve_rknn_model_pack(model_pack=model_pack, model_zoo_root=model_zoo_root)
         self.pack_info = pack_info
@@ -346,13 +355,9 @@ class RknnFaceGalleryRecognizer:
 
     def reload_gallery(self):
         loaded = {}
-        folders = sorted(path for path in self.gallery_dir.iterdir() if path.is_dir())
-        for folder in folders:
-            kr_name, en_name = parse_identity(folder.name)
+        for target in self.gallery_store.iter_embedding_targets():
             embeddings = []
-            for image_path in sorted(folder.iterdir()):
-                if not image_path.is_file():
-                    continue
+            for image_path in target["image_paths"]:
                 image = imread_local(image_path)
                 if image is None:
                     continue
@@ -362,9 +367,10 @@ class RknnFaceGalleryRecognizer:
                     continue
                 embeddings.append(embedding)
             if embeddings:
-                loaded[en_name] = {
-                    "kr_name": kr_name,
-                    "en_name": en_name,
+                loaded[target["person_id"]] = {
+                    "person_id": target["person_id"],
+                    "kr_name": target["name_ko"],
+                    "en_name": target["name_en"],
                     "embeddings": embeddings,
                 }
         self.gallery = loaded
@@ -391,16 +397,16 @@ class RknnFaceGalleryRecognizer:
             aligned = norm_crop(frame, kpss[index], image_size=self.recognizer.input_size[0])
             embedding = self.recognizer.get_feat(aligned).flatten()
 
-            best_en_name = "Unknown"
+            best_person_id = "Unknown"
             best_similarity = 0.0
-            for en_name, info in self.gallery.items():
+            for person_id, info in self.gallery.items():
                 average_similarity = average_top_similarity(embedding, info["embeddings"])
                 if average_similarity > best_similarity:
                     best_similarity = average_similarity
-                    best_en_name = en_name
+                    best_person_id = person_id
 
             if best_similarity >= self.threshold:
-                identity = self.gallery[best_en_name]
+                identity = self.gallery[best_person_id]
                 kr_name = identity["kr_name"]
                 en_name = identity["en_name"]
             else:
@@ -417,3 +423,7 @@ class RknnFaceGalleryRecognizer:
                 }
             )
         return results
+
+    def close(self):
+        self.detector.close()
+        self.recognizer.close()

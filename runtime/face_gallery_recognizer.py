@@ -28,9 +28,11 @@ from insightface.app import FaceAnalysis
 from tqdm import tqdm
 
 try:
-    from .gallery_utils import average_top_similarity, imread_local, parse_identity
+    from .gallery_store import GalleryStore
+    from .gallery_utils import average_top_similarity, imread_local
 except ImportError:
-    from gallery_utils import average_top_similarity, imread_local, parse_identity
+    from gallery_store import GalleryStore
+    from gallery_utils import average_top_similarity, imread_local
 
 
 class FaceGalleryRecognizer:
@@ -49,6 +51,7 @@ class FaceGalleryRecognizer:
         self.det_size = det_size
 
         self.gallery_dir.mkdir(parents=True, exist_ok=True)
+        self.gallery_store = GalleryStore(self.gallery_dir)
 
         available_providers = ort.get_available_providers()
         if provider not in available_providers:
@@ -71,13 +74,10 @@ class FaceGalleryRecognizer:
     def reload_gallery(self):
         """Reload all gallery embeddings from disk."""
         loaded = {}
-        folders = sorted(path for path in self.gallery_dir.iterdir() if path.is_dir())
-        for folder in tqdm(folders, desc="gallery load", leave=False):
-            kr_name, en_name = parse_identity(folder.name)
+        targets = list(self.gallery_store.iter_embedding_targets())
+        for target in tqdm(targets, desc="gallery load", leave=False):
             embeddings = []
-            for image_path in sorted(folder.iterdir()):
-                if not image_path.is_file():
-                    continue
+            for image_path in target["image_paths"]:
                 image = imread_local(image_path)
                 if image is None:
                     continue
@@ -87,9 +87,10 @@ class FaceGalleryRecognizer:
                     continue
                 embeddings.append(faces[0].embedding)
             if embeddings:
-                loaded[en_name] = {
-                    "kr_name": kr_name,
-                    "en_name": en_name,
+                loaded[target["person_id"]] = {
+                    "person_id": target["person_id"],
+                    "kr_name": target["name_ko"],
+                    "en_name": target["name_en"],
                     "embeddings": embeddings,
                 }
 
@@ -113,16 +114,16 @@ class FaceGalleryRecognizer:
                 )
                 continue
 
-            best_en_name = "Unknown"
+            best_person_id = "Unknown"
             best_similarity = 0.0
-            for en_name, info in self.gallery.items():
+            for person_id, info in self.gallery.items():
                 average_similarity = average_top_similarity(face.embedding, info["embeddings"])
                 if average_similarity > best_similarity:
                     best_similarity = average_similarity
-                    best_en_name = en_name
+                    best_person_id = person_id
 
             if best_similarity >= self.threshold:
-                identity = self.gallery[best_en_name]
+                identity = self.gallery[best_person_id]
                 kr_name = identity["kr_name"]
                 en_name = identity["en_name"]
             else:
@@ -140,3 +141,6 @@ class FaceGalleryRecognizer:
             )
 
         return results
+
+    def close(self):
+        self.app = None

@@ -23,6 +23,7 @@ Main outputs:
 
 from __future__ import annotations
 
+import gc
 from pathlib import Path
 
 def load_onnx_recognizer():
@@ -109,3 +110,10 @@ class FaceWrapper:
             info["detector_path"] = str(pack_info.get("detector_path"))
             info["recognizer_path"] = str(pack_info.get("recognizer_path"))
         return info
+
+    def close(self):
+        close_fn = getattr(self.recognizer, "close", None)
+        if callable(close_fn):
+            close_fn()
+        self.recognizer = None
+        gc.collect()

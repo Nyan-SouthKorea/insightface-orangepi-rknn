@@ -1,0 +1,18 @@
+[Unit]
+Description=InsightFace RKNN Web Console
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+Group=__USER__
+WorkingDirectory=__REPO_ROOT__
+Environment=PYTHONUNBUFFERED=1
+Environment=HOME=/home/__USER__
+ExecStart=/bin/bash -lc 'source "__VENV_ROOT__/bin/activate" && exec python "__REPO_ROOT__/runtime/web_backend/main.py" --host 0.0.0.0 --port __PORT__ --capture-mode webcam --camera-source "__CAMERA_SOURCE__" --gallery-dir "__REPO_ROOT__/runtime/gallery" --model-pack __MODEL_PACK__ --backend rknn --model-zoo-root "__REPO_ROOT__/conversion/results/model_zoo" --frontend-dist "__REPO_ROOT__/runtime/web_frontend/dist"'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
