@@ -35,6 +35,14 @@ source ../envs/ifr_rknn_lite2_cp310/bin/activate
 python runtime/web_backend/main.py   --host 0.0.0.0   --port 5000   --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0   --gallery-dir runtime/gallery   --model-pack buffalo_m   --inference-fps 0   --model-zoo-root conversion/results/model_zoo   --frontend-dist runtime/web_frontend/dist
 ```
 
+### Android bring-up 메모
+
+- 현재 이 모듈의 canonical 실행 경로는 `Linux + Python + FastAPI`다.
+- 같은 `.rknn` model zoo를 `Android 기반 RK3588`에서 재사용하는 방향은 가능하지만, runtime 계층은 Android 앱 구조에 맞춰 다시 붙여야 한다.
+- Android 장치 디버깅은 보통 `ssh`보다 `adb`가 표준이다.
+- 실무적으로는 `adb shell`, `adb push`, `adb pull`, `adb logcat`을 기본 bring-up 수단으로 본다.
+- 즉 Android 쪽은 `RKNN model zoo와 알고리즘 기준은 공유`, `카메라/UI/앱 lifecycle과 device-side adapter는 별도 포팅`으로 이해하면 된다.
+
 ### 3. service로 등록해서 실행할 때
 
 여기서 `service`는 OrangePI의 `systemd`가 web demo를 백그라운드에서 계속 관리하는 실행 방식이다. 즉, 사람이 로그인한 셸에서 직접 띄우는 것이 아니라 장치 운영용 프로세스로 등록해 두는 의미다.

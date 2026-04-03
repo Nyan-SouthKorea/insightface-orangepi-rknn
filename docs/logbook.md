@@ -26,6 +26,8 @@
 - README에는 최종 표시용 GIF/PNG만 남기고, 중간 생성 스크립트와 입력 메모는 canonical tracked 자산에서 제거했다.
 - frontend build 산출물 `runtime/web_frontend/dist/`는 로컬에서 생성하고 tracked repo에는 두지 않는다.
 - CPU baseline은 결과 JSON만 보존하고, ONNX 전용 보조 코드와 재생성 가능한 build 캐시는 canonical repo에서 제거했다.
+- 같은 `RKNN model zoo`를 `Android 기반 RK3588`에서도 재사용 가능한 방향으로 보고, 현재 repo는 Linux runtime 기준 문서와 자산을 유지한다.
+- Android bring-up과 디버깅은 기본적으로 `ssh`보다 `adb` 기준으로 보는 것이 맞다.
 
 ## 현재 전역 결정
 
@@ -46,6 +48,7 @@
 - 현재 backend는 `--inference-fps 0`을 기본으로 두고 최신 프레임 우선 추론으로 처리한다.
 - `buffalo_s`는 현재 face-only 주경로에서 `buffalo_sc`의 alias pack으로 취급하고, 별도 변환보다 metadata alias와 보조 모델 여부를 나눠 관리한다.
 - `buffalo_m_i8`는 비교용 `INT8` pack으로 model zoo에 추가했다.
+- Android 확장 시에는 `model zoo`, 전처리/후처리 기준, gallery 구조를 공용 자산으로 보고, camera/UI/device adapter는 Android 쪽에서 다시 붙인다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`를 기본으로 한다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 
@@ -102,3 +105,4 @@
 - 2026-04-03: README를 제품 소개 문서 형태로 재정리하고 CPU/RKNN benchmark, Lite2 배경, SDK 사용 예제를 함께 정리했다.
 - 2026-04-03: tracked 문서는 프로젝트 작성자나 운영자가 직접 정리한 기술 문서처럼 쓰는 기준을 `docs/AGENT.md`에 반영했다.
 - 2026-04-03: repo 슬림화 작업에서 CPU 전용 보조 코드, README 자산 생성 스크립트, frontend build 산출물, local calibration bundle, cache 디렉터리를 canonical 경로에서 제거했다.
+- 2026-04-03: Android 기반 RK3588 확장 가능성과 `adb` 중심 bring-up 메모를 README와 runtime README, project logbook에 반영했다.
