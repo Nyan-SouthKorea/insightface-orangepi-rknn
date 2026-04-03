@@ -48,7 +48,7 @@
 - 현재 backend는 `--inference-fps 0`을 기본으로 두고 최신 프레임 우선 추론으로 처리한다.
 - `buffalo_s`는 현재 face-only 주경로에서 `buffalo_sc`의 alias pack으로 취급하고, 별도 변환보다 metadata alias와 보조 모델 여부를 나눠 관리한다.
 - `buffalo_m_i8`는 비교용 `INT8` pack으로 model zoo에 추가했다.
-- Android 확장 시에는 `model zoo`, 전처리/후처리 기준, gallery 구조를 공용 자산으로 보고, camera/UI/device adapter는 Android 쪽에서 다시 붙인다.
+- Android 확장에서는 `model zoo`, 전처리/후처리 기준, gallery 구조를 공용 자산으로 두고, camera/UI/device adapter는 Android 구조에 맞춰 별도 구현한다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`를 기본으로 한다.
 - 로컬 워크스페이스 sibling 구조는 `repo / envs / secrets`로 맞춘다.
 

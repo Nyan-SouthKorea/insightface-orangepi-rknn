@@ -38,10 +38,10 @@ python runtime/web_backend/main.py   --host 0.0.0.0   --port 5000   --camera-sou
 ### Android bring-up 메모
 
 - 현재 이 모듈의 canonical 실행 경로는 `Linux + Python + FastAPI`다.
-- 같은 `.rknn` model zoo를 `Android 기반 RK3588`에서 재사용하는 방향은 가능하지만, runtime 계층은 Android 앱 구조에 맞춰 다시 붙여야 한다.
+- 같은 `.rknn` model zoo를 `Android 기반 RK3588`에서 재사용하는 방향은 가능하지만, runtime 계층은 Android 앱 구조에 맞춰 다시 구성해야 한다.
 - Android 장치 디버깅은 보통 `ssh`보다 `adb`가 표준이다.
 - 실무적으로는 `adb shell`, `adb push`, `adb pull`, `adb logcat`을 기본 bring-up 수단으로 본다.
-- 즉 Android 쪽은 `RKNN model zoo와 알고리즘 기준은 공유`, `카메라/UI/앱 lifecycle과 device-side adapter는 별도 포팅`으로 이해하면 된다.
+- 즉 Android 쪽은 `RKNN model zoo와 알고리즘 기준`을 공용으로 사용하고, `카메라/UI/앱 lifecycle과 device-side adapter`는 Android 구조에 맞춰 다시 구성한다.
 
 ### 3. service로 등록해서 실행할 때
 

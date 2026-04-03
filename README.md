@@ -267,9 +267,9 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 
 - 현재 repo의 canonical runtime은 `OrangePI Linux + RKNN Lite2 + Python` 기준으로 검증되어 있다.
 - 다만 `conversion/results/model_zoo/` 아래의 `.rknn` 자산과 pack manifest 구조는 `Android 기반 RK3588`에서도 재사용 가능한 방향으로 본다.
-- Android 쪽은 현재 runtime을 그대로 쓰는 것이 아니라, `camera / UI / process lifecycle`을 Android 앱 구조로 다시 붙이는 포팅 작업이 필요하다.
+- Android 쪽은 현재 runtime을 그대로 쓰지 않고, `camera / UI / process lifecycle`을 Android 앱 구조에 맞춰 다시 구성한다.
 - Android bring-up과 디버깅은 일반적으로 `ssh`보다 `adb`가 기본 경로다.
-- 따라서 Android 개발자와 협업할 때는 이 repo를 `RKNN model zoo + 전처리/후처리 기준 + gallery/SDK 설계 기준`으로 공유하고, device-side adapter는 Android native 계층에서 다시 구현하는 방식이 자연스럽다.
+- Android 확장에서는 이 repo의 `RKNN model zoo`, 전처리/후처리 기준, gallery/SDK 설계 기준을 공용 기준으로 사용하고, device-side adapter는 Android native 계층에서 다시 구현한다.
 
 ## 저장소 구조
 
