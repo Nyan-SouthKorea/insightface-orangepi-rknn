@@ -3,7 +3,7 @@
 Smoke:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
   python runtime/benchmark_rknn_face_sdk.py \
-    --image-path runtime/results/face_benchmark_input.jpg \
+    --image-path path/to/frame.jpg \
     --gallery-dir runtime/gallery \
     --model-packs buffalo_m,buffalo_m_i8 \
     --repeat 5 --warmup 2
@@ -11,9 +11,9 @@ Smoke:
 Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
   python runtime/benchmark_rknn_face_sdk.py \
-    --image-path runtime/results/face_benchmark_input.jpg \
+    --image-path path/to/frame.jpg \
     --gallery-dir runtime/gallery \
-    --model-packs buffalo_sc,buffalo_m,buffalo_m_i8,buffalo_l \
+    --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_m_i8,buffalo_l \
     --repeat 20 --warmup 5 \
     --output-json runtime/results/260401_0000_rknn_face_sdk_benchmark/summary.json
 
@@ -105,7 +105,6 @@ def benchmark_pack(
             latest_result = recognizer.recognize(image)
             pipeline_samples.append((time.perf_counter() - started) * 1000.0)
 
-        top_result = latest_result[0] if latest_result else {}
         return {
             "model_pack": model_pack,
             "status": "ok",
@@ -121,9 +120,7 @@ def benchmark_pack(
             "recognition": summarize_ms(recognition_samples),
             "pipeline": summarize_ms(pipeline_samples),
             "pipeline_fps": round(1000.0 / (sum(pipeline_samples) / len(pipeline_samples)), 2),
-            "top_name": top_result.get("en_name", "Unknown"),
-            "top_similarity": round(float(top_result.get("similarity", 0.0)), 4),
-            "top_det_score": round(float(top_result.get("det_score", 0.0)), 4),
+            "result_count": len(latest_result),
         }
     finally:
         recognizer.close()
@@ -131,17 +128,15 @@ def benchmark_pack(
 
 def to_markdown(rows: list[dict]) -> str:
     lines = [
-        "| model pack | status | resolved | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | top result | similarity |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |",
+        "| model pack | status | resolved | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | result count |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in rows:
         if row["status"] != "ok":
-            lines.append(
-                f"| {row['model_pack']} | {row['status']} | - | - | - | - | - | - | - | - | - |"
-            )
+            lines.append(f"| {row['model_pack']} | {row['status']} | - | - | - | - | - | - | - | - |")
             continue
         lines.append(
-            "| {model_pack} | {status} | {resolved_model_pack} | {dtype} | {load_ms} | {det_avg} | {rec_avg} | {pipe_avg} | {pipeline_fps} | {top_name} | {top_similarity} |".format(
+            "| {model_pack} | {status} | {resolved_model_pack} | {dtype} | {load_ms} | {det_avg} | {rec_avg} | {pipe_avg} | {pipeline_fps} | {result_count} |".format(
                 model_pack=row["model_pack"],
                 status=row["status"],
                 resolved_model_pack=row["resolved_model_pack"],
@@ -151,8 +146,7 @@ def to_markdown(rows: list[dict]) -> str:
                 rec_avg=row["recognition"]["avg_ms"],
                 pipe_avg=row["pipeline"]["avg_ms"],
                 pipeline_fps=row["pipeline_fps"],
-                top_name=row["top_name"],
-                top_similarity=row["top_similarity"],
+                result_count=row["result_count"],
             )
         )
     return "\n".join(lines)
@@ -162,7 +156,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image-path", required=True)
     parser.add_argument("--gallery-dir", default="runtime/gallery")
-    parser.add_argument("--model-packs", default="buffalo_m,buffalo_m_i8")
+    parser.add_argument("--model-packs", default="buffalo_sc,buffalo_s,buffalo_m,buffalo_m_i8,buffalo_l")
     parser.add_argument("--det-size", type=int, default=640)
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--warmup", type=int, default=5)

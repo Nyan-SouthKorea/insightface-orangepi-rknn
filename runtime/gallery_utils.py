@@ -24,8 +24,12 @@ def parse_identity(folder_name: str):
 
 
 def similarity_score(embedding_1, embedding_2) -> float:
-    normalized_1 = embedding_1 / np.linalg.norm(embedding_1)
-    normalized_2 = embedding_2 / np.linalg.norm(embedding_2)
+    norm_1 = np.linalg.norm(embedding_1)
+    norm_2 = np.linalg.norm(embedding_2)
+    if norm_1 == 0.0 or norm_2 == 0.0:
+        return 0.0
+    normalized_1 = embedding_1 / norm_1
+    normalized_2 = embedding_2 / norm_2
     cosine_similarity = float(np.dot(normalized_1, normalized_2))
     return max(0.0, min(1.0, (cosine_similarity + 1.0) / 2.0))
 

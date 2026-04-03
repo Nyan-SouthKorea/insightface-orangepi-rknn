@@ -23,6 +23,7 @@ Main inputs:
 
 Main outputs:
   - per-frame recognition results
+  - detection, embedding extraction, gallery matching helpers
 """
 
 from __future__ import annotations
@@ -44,6 +45,14 @@ def load_rknn_recognizer():
     except ImportError:
         from rknn_face_gallery_recognizer import RknnFaceGalleryRecognizer
     return RknnFaceGalleryRecognizer
+
+
+def load_similarity_score():
+    try:
+        from .gallery_utils import similarity_score
+    except ImportError:
+        from gallery_utils import similarity_score
+    return similarity_score
 
 
 class FaceWrapper:
@@ -92,6 +101,25 @@ class FaceWrapper:
 
     def infer(self, frame):
         return self.recognizer.recognize(frame)
+
+    def detect_faces(self, frame, max_num: int = 0):
+        return self.recognizer.detect_faces(frame, max_num=max_num)
+
+    def extract_face_embeddings(self, frame, max_num: int = 0):
+        return self.recognizer.extract_face_embeddings(frame, max_num=max_num)
+
+    def extract_embedding(self, frame, face_index: int = 0):
+        return self.recognizer.extract_embedding(frame, face_index=face_index)
+
+    def match_embedding(self, embedding, top_k: int = 5):
+        return self.recognizer.match_embedding(embedding, top_k=top_k)
+
+    def list_gallery_people(self):
+        return self.recognizer.list_gallery_people()
+
+    @staticmethod
+    def compare_embeddings(embedding_1, embedding_2) -> float:
+        return load_similarity_score()(embedding_1, embedding_2)
 
     @property
     def gallery_count(self) -> int:

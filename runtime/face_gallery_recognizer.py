@@ -33,10 +33,10 @@ from tqdm import tqdm
 
 try:
     from .gallery_store import GalleryStore
-    from .gallery_utils import average_top_similarity, imread_local
+    from .gallery_utils import average_top_similarity, imread_local, similarity_score
 except ImportError:
     from gallery_store import GalleryStore
-    from gallery_utils import average_top_similarity, imread_local
+    from gallery_utils import average_top_similarity, imread_local, similarity_score
 
 
 class FaceGalleryRecognizer:
@@ -101,6 +101,73 @@ class FaceGalleryRecognizer:
         self.gallery = loaded
         return loaded
 
+    def list_gallery_people(self):
+        return [
+            {
+                "person_id": info["person_id"],
+                "kr_name": info["kr_name"],
+                "en_name": info["en_name"],
+                "embedding_count": len(info["embeddings"]),
+            }
+            for info in self.gallery.values()
+        ]
+
+    def detect_faces(self, frame, max_num: int = 0):
+        faces = self.app.get(frame)
+        if max_num > 0:
+            faces = faces[:max_num]
+        detections = []
+        for face in faces:
+            detections.append(
+                {
+                    "bbox": [int(value) for value in face.bbox],
+                    "det_score": float(face.det_score),
+                    "kps": face.kps.astype(float).tolist() if getattr(face, "kps", None) is not None else None,
+                }
+            )
+        return detections
+
+    def extract_face_embeddings(self, frame, max_num: int = 0):
+        faces = self.app.get(frame)
+        if max_num > 0:
+            faces = faces[:max_num]
+        embeddings = []
+        for face in faces:
+            embeddings.append(
+                {
+                    "bbox": [int(value) for value in face.bbox],
+                    "det_score": float(face.det_score),
+                    "kps": face.kps.astype(float).tolist() if getattr(face, "kps", None) is not None else None,
+                    "embedding": face.embedding.copy(),
+                }
+            )
+        return embeddings
+
+    def extract_embedding(self, frame, face_index: int = 0):
+        embeddings = self.extract_face_embeddings(frame, max_num=face_index + 1)
+        if face_index >= len(embeddings):
+            return None
+        return embeddings[face_index]["embedding"]
+
+    def match_embedding(self, embedding, top_k: int = 5):
+        matches = []
+        for info in self.gallery.values():
+            matches.append(
+                {
+                    "person_id": info["person_id"],
+                    "kr_name": info["kr_name"],
+                    "en_name": info["en_name"],
+                    "similarity": average_top_similarity(embedding, info["embeddings"]),
+                    "embedding_count": len(info["embeddings"]),
+                }
+            )
+        matches.sort(key=lambda item: item["similarity"], reverse=True)
+        return matches[: max(1, top_k)]
+
+    @staticmethod
+    def compare_embeddings(embedding_1, embedding_2) -> float:
+        return similarity_score(embedding_1, embedding_2)
+
     def recognize(self, frame):
         faces = self.app.get(frame)
         results = []
@@ -118,16 +185,12 @@ class FaceGalleryRecognizer:
                 )
                 continue
 
-            best_person_id = "Unknown"
-            best_similarity = 0.0
-            for person_id, info in self.gallery.items():
-                average_similarity = average_top_similarity(face.embedding, info["embeddings"])
-                if average_similarity > best_similarity:
-                    best_similarity = average_similarity
-                    best_person_id = person_id
+            matches = self.match_embedding(face.embedding, top_k=1)
+            best_match = matches[0] if matches else None
+            best_similarity = best_match["similarity"] if best_match else 0.0
 
-            if best_similarity >= self.threshold:
-                identity = self.gallery[best_person_id]
+            if best_match and best_similarity >= self.threshold:
+                identity = self.gallery[best_match["person_id"]]
                 kr_name = identity["kr_name"]
                 en_name = identity["en_name"]
             else:

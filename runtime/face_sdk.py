@@ -19,6 +19,8 @@ sdk = FaceSDK(
 frame = cv2.imread('runtime/results/face_benchmark_input.jpg')
 print(sdk.describe())
 print(sdk.infer(frame))
+print(sdk.detect_faces(frame))
+print(sdk.list_gallery_people())
 PY
 
 Main inputs:
@@ -29,6 +31,7 @@ Main inputs:
 Main outputs:
   - per-frame recognition results
   - model pack inventory for UI or service code
+  - face detection, embedding extraction, gallery match helpers for custom app code
 """
 
 from __future__ import annotations
