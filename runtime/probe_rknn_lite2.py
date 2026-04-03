@@ -4,7 +4,7 @@ Smoke:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
   python runtime/probe_rknn_lite2.py \
     --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn \
-    --input-image runtime/results/face_benchmark_input.jpg \
+    --input-image path/to/frame.jpg \
     --model-kind detection \
     --input-size 640,640
 
@@ -12,14 +12,14 @@ Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
   python runtime/probe_rknn_lite2.py \
     --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn \
-    --input-image runtime/results/face_benchmark_input.jpg \
+    --input-image path/to/frame.jpg \
     --model-kind recognition \
     --input-size 112,112 \
     --output-json runtime/results/rknn_probe.json
 
 Main inputs:
   - `--rknn-path`: exported RKNN file
-  - `--input-image`: smoke image
+  - `--input-image`: smoke image path
   - `--model-kind`: detection or recognition
 
 Main outputs:

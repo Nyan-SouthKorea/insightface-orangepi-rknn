@@ -2,20 +2,11 @@
 
 Smoke:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/examples/sdk_custom_usage.py \
-    --image-path-a path/to/frame_a.jpg \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m
+  python runtime/examples/sdk_custom_usage.py --image-path-a path/to/frame_a.jpg --gallery-dir runtime/gallery --model-pack buffalo_m
 
 Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/examples/sdk_custom_usage.py \
-    --image-path-a path/to/frame_a.jpg \
-    --image-path-b path/to/frame_b.jpg \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m \
-    --top-k 3 \
-    --model-zoo-root conversion/results/model_zoo
+  python runtime/examples/sdk_custom_usage.py --image-path-a path/to/frame_a.jpg --image-path-b path/to/frame_b.jpg --gallery-dir runtime/gallery --model-pack buffalo_m --top-k 3 --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
   - `--image-path-a`: 얼굴을 감지하고 임베딩을 뽑을 첫 번째 이미지
@@ -52,8 +43,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--image-path-b")
     parser.add_argument("--gallery-dir", default="runtime/gallery")
     parser.add_argument("--model-pack", default="buffalo_m")
-    parser.add_argument("--backend", default="rknn")
-    parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--det-size", type=int, default=640)
     parser.add_argument("--top-k", type=int, default=3)
@@ -86,8 +75,6 @@ def main():
     sdk = FaceSDK(
         gallery_dir=args.gallery_dir,
         model_pack=args.model_pack,
-        backend=args.backend,
-        provider=args.provider,
         threshold=args.threshold,
         det_size=args.det_size,
         model_zoo_root=args.model_zoo_root,

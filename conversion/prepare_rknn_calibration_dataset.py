@@ -4,7 +4,7 @@ Smoke:
   source ../envs/ifr_rknn_host_cp310/bin/activate
   python conversion/prepare_rknn_calibration_dataset.py \
     --output-dir conversion/results/calibration/buffalo_m_i8 \
-    --source-glob runtime/results/face_benchmark_input.jpg \
+    --source-glob 'path/to/calibration/*.jpg' \
     --snapshot-url http://<orangepi-host>:5000/api/snapshot.jpg \
     --snapshot-count 4 \
     --snapshot-interval 0.2
@@ -13,7 +13,7 @@ Full:
   source ../envs/ifr_rknn_host_cp310/bin/activate
   python conversion/prepare_rknn_calibration_dataset.py \
     --output-dir conversion/results/calibration/buffalo_m_i8 \
-    --source-glob runtime/results/face_benchmark_input.jpg \
+    --source-glob 'path/to/calibration/*.jpg' \
     --source-glob runtime/gallery/*/images/* \
     --snapshot-url http://<orangepi-host>:5000/api/snapshot.jpg \
     --snapshot-count 24 \

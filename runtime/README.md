@@ -23,7 +23,8 @@ bash runtime/build_web_frontend.sh
 - `setup_orangepi_rknn_web_env.sh`
   - web backend 실행에 필요한 패키지를 맞춘다.
 - `build_web_frontend.sh`
-  - frontend를 실제 배포용 정적 파일로 다시 빌드한다.
+  - `runtime/web_frontend/src/`를 기준으로 `runtime/web_frontend/dist/`를 생성한다.
+  - `dist/`는 tracked 자산이 아니라 로컬 build 결과다.
 
 ### 2. 매번 수동으로 web demo를 실행할 때
 
@@ -31,16 +32,7 @@ bash runtime/build_web_frontend.sh
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/web_backend/main.py \
-  --host 0.0.0.0 \
-  --port 5000 \
-  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
-  --gallery-dir runtime/gallery \
-  --model-pack buffalo_m \
-  --backend rknn \
-  --inference-fps 0 \
-  --model-zoo-root conversion/results/model_zoo \
-  --frontend-dist runtime/web_frontend/dist
+python runtime/web_backend/main.py   --host 0.0.0.0   --port 5000   --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0   --gallery-dir runtime/gallery   --model-pack buffalo_m   --inference-fps 0   --model-zoo-root conversion/results/model_zoo   --frontend-dist runtime/web_frontend/dist
 ```
 
 ### 3. service로 등록해서 실행할 때
@@ -74,12 +66,11 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 import cv2
 from runtime import FaceSDK
 
-frame = cv2.imread("runtime/results/face_benchmark_input.jpg")
+frame = cv2.imread("path/to/frame.jpg")
 
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
-    backend="rknn",
     model_zoo_root="conversion/results/model_zoo",
 )
 
@@ -93,12 +84,7 @@ sdk.close()
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/examples/sdk_quickstart.py \
-  --image-path runtime/results/face_benchmark_input.jpg \
-  --gallery-dir runtime/gallery \
-  --model-pack buffalo_m \
-  --backend rknn \
-  --model-zoo-root conversion/results/model_zoo
+python runtime/examples/sdk_quickstart.py   --image-path path/to/frame.jpg   --gallery-dir runtime/gallery   --model-pack buffalo_m   --model-zoo-root conversion/results/model_zoo
 ```
 
 ### 5. 커스텀 기능을 직접 호출할 때
@@ -112,7 +98,6 @@ from runtime import FaceSDK
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
-    backend="rknn",
     model_zoo_root="conversion/results/model_zoo",
 )
 
@@ -137,13 +122,7 @@ sdk.close()
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/examples/sdk_custom_usage.py \
-  --image-path-a runtime/results/face_benchmark_input.jpg \
-  --gallery-dir runtime/gallery \
-  --model-pack buffalo_m \
-  --backend rknn \
-  --top-k 3 \
-  --model-zoo-root conversion/results/model_zoo
+python runtime/examples/sdk_custom_usage.py   --image-path-a path/to/frame_a.jpg   --image-path-b path/to/frame_b.jpg   --gallery-dir runtime/gallery   --model-pack buffalo_m   --top-k 3   --model-zoo-root conversion/results/model_zoo
 ```
 
 ## model pack 메모
@@ -155,7 +134,7 @@ python runtime/examples/sdk_custom_usage.py \
 ## 현재 사용 형태
 
 - 앱 코드에서는 `runtime.FaceSDK` 또는 `runtime.face_wrapper.FaceWrapper`를 import해서 쓴다.
-- 운영 화면은 `runtime/web_backend/main.py`와 `runtime/web_frontend/dist/`를 함께 띄워 쓴다.
+- 운영 화면은 `runtime/web_backend/main.py`와 `runtime/web_frontend/src/`를 build한 정적 자산을 함께 띄워 쓴다.
 - service 설치는 `runtime/install_orangepi_rknn_web_service.sh`가 맡는다.
 
 ## Public SDK Surface
@@ -175,7 +154,7 @@ python runtime/examples/sdk_custom_usage.py \
 - gallery 자동 로드와 임베딩 비교
 - 카메라 또는 JSON 입력 연결
 - `FastAPI` backend
-- `React` frontend
+- `React` frontend source
 - 모델 전환과 메모리 정리
 - `live-state` 상태 스트림과 최신 결과 overlay
 - 갤러리 등록, 촬영 저장, 업로드, 삭제
@@ -197,7 +176,7 @@ python runtime/examples/sdk_custom_usage.py \
 
 ## benchmark 결과 파일
 
-- CPU baseline: [results/260401_1530_ort_cpu_benchmark/summary.json](results/260401_1530_ort_cpu_benchmark/summary.json)
+- CPU baseline 보존 기록: [results/260401_1530_ort_cpu_benchmark/summary.json](results/260401_1530_ort_cpu_benchmark/summary.json)
 - RKNN all-pack benchmark: [results/260403_0942_rknn_all_pack_benchmark/summary.json](results/260403_0942_rknn_all_pack_benchmark/summary.json)
 
 ## 현재 고정 결정
@@ -211,7 +190,7 @@ python runtime/examples/sdk_custom_usage.py \
 - 서비스 포트는 최종적으로 `5000`을 유지한다.
 - OrangePI service는 `camera-id`보다 `camera-source`를 우선 사용한다.
 - 현재 주 카메라 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`다.
-- CPU 경로는 `benchmark_insightface_cpu.py`와 `../envs/ifr_ort_cpu_probe`로만 유지한다.
+- CPU baseline은 결과 JSON만 보존하고, ONNX 전용 보조 코드는 canonical runtime 경로에서 제거했다.
 
 ## 현재 entry script
 
@@ -232,15 +211,13 @@ python runtime/examples/sdk_custom_usage.py \
 - `runtime/benchmark_rknn_face_sdk.py`
   - OrangePI에서 `FP16 / INT8 / all-pack` 비교 benchmark
 - `runtime/web_frontend/`
-  - 운영용 web UI source와 build 결과
+  - 운영용 web UI source
 - `runtime/install_orangepi_rknn_web_service.sh`
   - OrangePI service 설치 entry
 - `runtime/setup_orangepi_rknn_web_env.sh`
   - web backend 실행 패키지까지 포함한 Lite2 env 준비
 - `runtime/build_web_frontend.sh`
   - frontend build entry
-- `runtime/benchmark_insightface_cpu.py`
-  - CPU 비교 benchmark
 - `runtime/probe_rknn_lite2.py`
   - `.rknn` 단건 smoke
 

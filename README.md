@@ -16,7 +16,6 @@
 - 첫째는 앱 코드가 바로 import해서 쓰는 `RKNN FaceSDK`다.
 - 둘째는 모델 전환, 갤러리 관리, 실시간 상태 확인을 맡는 `front / back` 분리형 web console이다.
 - 실시간 주경로는 `InsightFace -> ONNX -> RKNN -> RKNN Lite2 -> OrangePI RK3588`다.
-- CPU 경로는 benchmark와 비교 검증용이고, 제품 경로는 `RKNN`이다.
 - 현재 canonical pack은 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`, 비교용 `buffalo_m_i8`다.
 - `buffalo_s`는 face-only alias pack이다. `conversion/results/model_zoo/rk3588/buffalo_s/`에는 `pack.json`만 두고, 실제 `.rknn` 파일은 `buffalo_sc/` 아래 산출물을 재사용한다.
 - 현재 안정된 기본 runtime pack은 `buffalo_m`으로 둔다.
@@ -31,9 +30,7 @@
 
 ## Demo
 
-아래 영상은 OrangePI RK3588에서 얼굴 인식, 모델 전환, 갤러리 등록, NPU 동작을 실시간으로 확인한 데모다.  
-README에는 표시용 GIF를 사용하고, 원본 입력 자산은 `repo/사용자 추가 폴더/` 기준으로 관리한다.  
-데모 인물 표기는 현재 gallery metadata 기준 `라이언 / Ryan`으로 맞췄고, GIF 재생성 스크립트는 [assets/readme/build_demo_assets.py](assets/readme/build_demo_assets.py), 입력 메모는 [assets/readme/demo_assets.json](assets/readme/demo_assets.json)에 둔다.
+아래 GIF는 OrangePI RK3588에서 얼굴 인식, 모델 전환, 갤러리 등록, NPU 동작을 실제로 확인한 데모 장면이다. README에는 최종 표시용 자산만 남기고, 중간 생성 스크립트와 입력 메모는 정식 배포 경로에서 제외했다.
 
 | Live Recognition | Model Switching |
 | --- | --- |
@@ -43,7 +40,7 @@ README에는 표시용 GIF를 사용하고, 원본 입력 자산은 `repo/사용
 | Gallery Registration | NPU Monitoring |
 | --- | --- |
 | <img src="assets/readme/demo_gallery-registration_ryan.gif" alt="Gallery registration demo" width="100%" /> | <img src="assets/readme/demo_npu-monitoring_ryan.gif" alt="NPU monitoring demo" width="100%" /> |
-| 갤러리에 새 인물을 등록하고 즉시 인식에 반영 | `rknpu/load`와 web console을 같이 보며 NPU load 확인 |
+| 갤러리에 새 인물을 등록하고 즉시 인식에 반영 | `rknpu/load`와 web console을 함께 보며 NPU load를 확인 |
 
 ## 이 저장소가 제공하는 것
 
@@ -72,12 +69,11 @@ source ../envs/ifr_rknn_lite2_cp310/bin/activate
 import cv2
 from runtime import FaceSDK
 
-frame = cv2.imread("runtime/results/face_benchmark_input.jpg")
+frame = cv2.imread("path/to/frame.jpg")
 
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
-    backend="rknn",
     model_zoo_root="conversion/results/model_zoo",
 )
 
@@ -94,7 +90,7 @@ sdk.close()
 
 ## Custom SDK Usage
 
-기본 `infer(frame)` 외에도, 외부 사용자가 직접 제어할 수 있는 표면을 열어 두었다.
+기본 `infer(frame)` 외에도, 외부 사용자가 detection, embedding, cosine similarity, gallery matching을 직접 제어할 수 있는 표면을 열어 두었다.
 
 ```python
 import cv2
@@ -103,7 +99,6 @@ from runtime import FaceSDK
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
-    backend="rknn",
     model_zoo_root="conversion/results/model_zoo",
 )
 
@@ -151,7 +146,8 @@ bash runtime/build_web_frontend.sh
 - `setup_orangepi_rknn_web_env.sh`
   - web backend 실행에 필요한 패키지를 맞춘다.
 - `build_web_frontend.sh`
-  - frontend를 실제 배포용 정적 파일로 다시 빌드한다.
+  - `runtime/web_frontend/src/`를 기준으로 배포용 정적 자산 `runtime/web_frontend/dist/`를 생성한다.
+  - `dist/`는 tracked 산출물이 아니라 로컬 build 결과다.
 
 ### 환경 준비가 끝난 뒤 매번 수동 실행할 때
 
@@ -159,19 +155,10 @@ bash runtime/build_web_frontend.sh
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/web_backend/main.py \
-  --host 0.0.0.0 \
-  --port 5000 \
-  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
-  --gallery-dir runtime/gallery \
-  --model-pack buffalo_m \
-  --backend rknn \
-  --inference-fps 0 \
-  --model-zoo-root conversion/results/model_zoo \
-  --frontend-dist runtime/web_frontend/dist
+python runtime/web_backend/main.py   --host 0.0.0.0   --port 5000   --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0   --gallery-dir runtime/gallery   --model-pack buffalo_m   --inference-fps 0   --model-zoo-root conversion/results/model_zoo   --frontend-dist runtime/web_frontend/dist
 ```
 
-### service로 다시 실행할 때
+### service로 실행할 때
 
 여기서 `service로 실행한다`는 것은 현재 SSH 터미널에서 직접 띄우는 대신, OrangePI의 `systemd`가 web demo를 백그라운드 프로세스로 관리하게 두는 뜻이다.
 
@@ -205,7 +192,7 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 - 실행 위치: `OrangePI RK3588`
 - 실행 환경: `onnxruntime 1.23.2`, `CPUExecutionProvider`
 - 결과 JSON: [runtime/results/260401_1530_ort_cpu_benchmark/summary.json](runtime/results/260401_1530_ort_cpu_benchmark/summary.json)
-- 해석: CPU 경로는 비교 기준선이다. 제품 실시간 경로로 보지 않는다.
+- 해석: CPU 경로는 비교 기준선으로만 남긴 보존 기록이다. 현재 canonical runtime 경로는 아니다.
 
 | model pack | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
@@ -246,11 +233,9 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 - `RKNN Lite2`
   - OrangePI 같은 target device에서 `.rknn` 모델을 실제로 실행하는 runtime API
 
-즉 이 프로젝트에서 `Lite2`를 쓰는 이유는 `RK3588 배포 장치에서 공식 runtime 경로가 그것이기 때문`이다.  
-모델 품질과 정확도는 `원본 InsightFace pack`, `FP16/INT8 선택`, `calibration dataset`, `runtime 설정`이 결정하고, `Lite2`라는 이름 자체가 정확도 열화를 뜻하지는 않는다.
+즉 이 프로젝트에서 `Lite2`를 쓰는 이유는 `RK3588 배포 장치에서 공식 runtime 경로가 그것이기 때문`이다. 모델 품질과 정확도는 `원본 InsightFace pack`, `FP16/INT8 선택`, `calibration dataset`, `runtime 설정`이 결정하고, `Lite2`라는 이름 자체가 정확도 열화를 뜻하지는 않는다.
 
-이 프로젝트에서는 host의 `Toolkit2`와 device의 `Lite2`가 역할을 나눠 동작한다.  
-즉 변환과 양자화는 host에서, 실제 배포 추론은 device-side runtime에서 맡는 구조다.
+이 프로젝트에서는 host의 `Toolkit2`와 device의 `Lite2`가 역할을 나눠 동작한다. 즉 변환과 양자화는 host에서, 실제 배포 추론은 device-side runtime에서 맡는 구조다.
 
 ## 변환과 검증 범위
 
@@ -295,7 +280,6 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 - 현재 상태와 최근 로그: [docs/logbook.md](docs/logbook.md)
 - RKNN 변환 매뉴얼: [conversion/README.md](conversion/README.md)
 - OrangePI runtime / service 기준: [runtime/README.md](runtime/README.md)
-- README 자산 생성 기준: [assets/readme/build_demo_assets.py](assets/readme/build_demo_assets.py)
 
 ## 현재 고정 메모
 
@@ -304,4 +288,5 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 - `buffalo_m_i8`는 비교용 candidate pack으로 유지한다.
 - `buffalo_s`는 `buffalo_sc` face-only alias pack이다. `buffalo_s/` 아래에 `.rknn` 파일이 없고 `pack.json`만 있어도 정상이며, runtime은 manifest를 읽어 실제 파일을 `buffalo_sc/`에서 연다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`다.
+- frontend build 산출물 `runtime/web_frontend/dist/`는 로컬에서 생성하고 git에는 포함하지 않는다.
 - 개발 보드는 고정 LAN 주소 정책으로 운영하고, 실제 주소는 tracked 문서에 남기지 않는다.

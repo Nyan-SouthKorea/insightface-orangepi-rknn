@@ -1,25 +1,12 @@
-"""FastAPI backend entry for the new RKNN web demo.
+"""FastAPI backend entry for the RKNN web console.
 
 Smoke:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/web_backend/main.py \
-    --host 0.0.0.0 --port 5050 \
-    --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m \
-    --backend rknn \
-    --inference-fps 0
+  python runtime/web_backend/main.py --host 0.0.0.0 --port 5050 --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 --gallery-dir runtime/gallery --model-pack buffalo_m --inference-fps 0
 
 Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/web_backend/main.py \
-    --host 0.0.0.0 --port 5000 \
-    --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m \
-    --backend rknn \
-    --inference-fps 0 \
-    --model-zoo-root conversion/results/model_zoo
+  python runtime/web_backend/main.py --host 0.0.0.0 --port 5000 --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 --gallery-dir runtime/gallery --model-pack buffalo_m --inference-fps 0 --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
   - `runtime/gallery/`
@@ -27,8 +14,8 @@ Main inputs:
   - webcam or JSON image frames
 
 Main outputs:
-  - `http://<device-ip>:<port>/`
-  - `http://<device-ip>:<port>/api/*`
+  - `http://<orangepi-host>:<port>/`
+  - `http://<orangepi-host>:<port>/api/*`
 """
 
 from __future__ import annotations
@@ -61,8 +48,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--image-dir", default="cam_images")
     parser.add_argument("--gallery-dir", default="runtime/gallery")
     parser.add_argument("--model-pack", default="buffalo_m")
-    parser.add_argument("--backend", default="rknn")
-    parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--det-size", type=int, default=640)
     parser.add_argument("--inference-fps", type=int, default=0)

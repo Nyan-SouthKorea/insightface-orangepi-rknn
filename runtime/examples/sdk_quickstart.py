@@ -2,19 +2,11 @@
 
 Smoke:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/examples/sdk_quickstart.py \
-    --image-path path/to/frame.jpg \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m
+  python runtime/examples/sdk_quickstart.py --image-path path/to/frame.jpg --gallery-dir runtime/gallery --model-pack buffalo_m
 
 Full:
   source ../envs/ifr_rknn_lite2_cp310/bin/activate
-  python runtime/examples/sdk_quickstart.py \
-    --image-path path/to/frame.jpg \
-    --gallery-dir runtime/gallery \
-    --model-pack buffalo_m \
-    --backend rknn \
-    --model-zoo-root conversion/results/model_zoo
+  python runtime/examples/sdk_quickstart.py --image-path path/to/frame.jpg --gallery-dir runtime/gallery --model-pack buffalo_m --model-zoo-root conversion/results/model_zoo
 
 Main inputs:
   - `--image-path`: cv2로 읽을 단일 이미지 경로
@@ -48,8 +40,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--image-path", required=True)
     parser.add_argument("--gallery-dir", default="runtime/gallery")
     parser.add_argument("--model-pack", default="buffalo_m")
-    parser.add_argument("--backend", default="rknn")
-    parser.add_argument("--provider", default="CPUExecutionProvider")
     parser.add_argument("--threshold", type=float, default=0.6)
     parser.add_argument("--det-size", type=int, default=640)
     parser.add_argument("--model-zoo-root", default="conversion/results/model_zoo")
@@ -65,8 +55,6 @@ def main():
     sdk = FaceSDK(
         gallery_dir=args.gallery_dir,
         model_pack=args.model_pack,
-        backend=args.backend,
-        provider=args.provider,
         threshold=args.threshold,
         det_size=args.det_size,
         model_zoo_root=args.model_zoo_root,

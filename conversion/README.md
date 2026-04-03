@@ -56,63 +56,38 @@ source ../envs/ifr_rknn_host_cp310/bin/activate
 3. 첫 smoke pack 변환
 
 ```bash
-python conversion/export_insightface_pack_rknn.py \
-  --model-packs buffalo_sc \
-  --target-platform rk3588 \
-  --dtype fp \
-  --skip-existing
+python conversion/export_insightface_pack_rknn.py   --model-packs buffalo_sc   --target-platform rk3588   --dtype fp   --skip-existing
 ```
 
 4. 전체 face-only pack 변환
 
 ```bash
-python conversion/export_insightface_pack_rknn.py \
-  --model-packs buffalo_sc,buffalo_m,buffalo_l,buffalo_s \
-  --target-platform rk3588 \
-  --dtype fp \
-  --skip-existing
+python conversion/export_insightface_pack_rknn.py   --model-packs buffalo_sc,buffalo_m,buffalo_l,buffalo_s   --target-platform rk3588   --dtype fp   --skip-existing
 ```
 
 5. `INT8 calibration` 입력 준비
 
 - calibration 이미지는 private local 자산으로 보고 `conversion/results/calibration/` 아래에만 둔다.
 - 현재 canonical 준비 script는 `conversion/prepare_rknn_calibration_dataset.py`다.
+- calibration bundle은 export가 끝난 뒤 local-only 산출물로 정리하거나 삭제해도 된다.
 
 ```bash
-python conversion/prepare_rknn_calibration_dataset.py \
-  --output-dir conversion/results/calibration/buffalo_m_i8 \
-  --source-glob runtime/results/face_benchmark_input.jpg \
-  --snapshot-url http://<orangepi-host>:5000/api/snapshot.jpg \
-  --snapshot-count 24 \
-  --snapshot-interval 0.25
+python conversion/prepare_rknn_calibration_dataset.py   --output-dir conversion/results/calibration/buffalo_m_i8   --source-glob 'path/to/calibration/*.jpg'   --source-glob 'runtime/gallery/*/images/*'   --snapshot-url http://<orangepi-host>:5000/api/snapshot.jpg   --snapshot-count 24   --snapshot-interval 0.25
 ```
 
 6. `buffalo_m_i8` 변환
 
 ```bash
-python conversion/export_insightface_pack_rknn.py \
-  --model-packs buffalo_m_i8 \
-  --target-platform rk3588 \
-  --dtype i8 \
-  --detector-dataset conversion/results/calibration/buffalo_m_i8/detector_dataset.txt \
-  --recognizer-dataset conversion/results/calibration/buffalo_m_i8/recognizer_dataset.txt
+python conversion/export_insightface_pack_rknn.py   --model-packs buffalo_m_i8   --target-platform rk3588   --dtype i8   --detector-dataset conversion/results/calibration/buffalo_m_i8/detector_dataset.txt   --recognizer-dataset conversion/results/calibration/buffalo_m_i8/recognizer_dataset.txt
 ```
 
 7. OrangePI에서 단건 smoke
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/probe_rknn_lite2.py \
-  --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn \
-  --input-image runtime/results/face_benchmark_input.jpg \
-  --model-kind detection \
-  --input-size 640,640
+python runtime/probe_rknn_lite2.py   --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/det_500m_fp16.rknn   --input-image path/to/frame.jpg   --model-kind detection   --input-size 640,640
 
-python runtime/probe_rknn_lite2.py \
-  --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn \
-  --input-image runtime/results/face_benchmark_input.jpg \
-  --model-kind recognition \
-  --input-size 112,112
+python runtime/probe_rknn_lite2.py   --rknn-path conversion/results/model_zoo/rk3588/buffalo_sc/w600k_mbf_fp16.rknn   --input-image path/to/frame.jpg   --model-kind recognition   --input-size 112,112
 ```
 
 8. SDK smoke
@@ -126,9 +101,9 @@ from runtime import FaceSDK
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
-    backend="rknn",
+    model_zoo_root="conversion/results/model_zoo",
 )
-frame = cv2.imread("runtime/results/face_benchmark_input.jpg")
+frame = cv2.imread("path/to/frame.jpg")
 print(sdk.describe())
 print(sdk.infer(frame))
 sdk.close()
@@ -139,13 +114,7 @@ PY
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/benchmark_rknn_face_sdk.py \
-  --image-path runtime/results/face_benchmark_input.jpg \
-  --gallery-dir runtime/gallery \
-  --model-packs buffalo_m,buffalo_m_i8 \
-  --repeat 20 \
-  --warmup 5 \
-  --output-json runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json
+python runtime/benchmark_rknn_face_sdk.py   --image-path path/to/frame.jpg   --gallery-dir runtime/gallery   --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_m_i8,buffalo_l   --repeat 20   --warmup 5   --output-json runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json
 ```
 
 ## 현재 canonical 산출물

@@ -6,7 +6,6 @@ from runtime.face_wrapper import FaceWrapper
 wrapper = FaceWrapper(
     gallery_dir='runtime/gallery',
     model_pack='buffalo_sc',
-    backend='rknn',
 )
 print(type(wrapper.recognizer).__name__)
 PY
@@ -19,9 +18,8 @@ from runtime.face_wrapper import FaceWrapper
 wrapper = FaceWrapper(
     gallery_dir='runtime/gallery',
     model_pack='buffalo_sc',
-    backend='rknn',
 )
-frame = cv2.imread('runtime/results/face_benchmark_input.jpg')
+frame = cv2.imread('path/to/frame.jpg')
 print(wrapper.infer(frame))
 PY
 

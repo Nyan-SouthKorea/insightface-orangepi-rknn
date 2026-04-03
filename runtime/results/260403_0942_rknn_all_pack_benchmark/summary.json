@@ -1,5 +1,5 @@
 {
-  "image_path": "runtime/results/face_benchmark_input.jpg",
+  "image_path": "path/to/frame.jpg",
   "gallery_dir": "runtime/gallery",
   "model_zoo_root": "conversion/results/model_zoo",
   "threshold": 0.6,

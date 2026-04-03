@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import copy
 import gc
-import os
 import threading
 import time
 from pathlib import Path
@@ -96,8 +95,6 @@ class LiveRuntimeManager:
         return FaceSDK(
             gallery_dir=str(self.gallery_dir),
             model_pack=model_pack,
-            backend=self.args.backend,
-            provider=self.args.provider,
             threshold=self.args.threshold,
             det_size=self.args.det_size,
             model_zoo_root=self.args.model_zoo_root,
@@ -240,7 +237,6 @@ class LiveRuntimeManager:
 
     def list_model_packs(self) -> list[dict]:
         items = FaceSDK.list_model_packs(
-            backend=self.args.backend,
             target_platform=self.args.target_platform,
             model_zoo_root=self.args.model_zoo_root,
         )
@@ -423,9 +419,7 @@ class LiveRuntimeManager:
         return 0.0
 
     def status_provider_name(self) -> str:
-        if self.args.backend == "rknn":
-            return "RKNNLite"
-        return self.args.provider
+        return "RKNNLite"
 
     def describe_runtime(self) -> dict:
         with self.sdk_lock:
@@ -436,7 +430,7 @@ class LiveRuntimeManager:
             frame_height = self.frame_height
 
         return {
-            "backend": self.args.backend,
+            "backend": "rknn",
             "provider": self.status_provider_name(),
             "capture_mode": self.args.capture_mode,
             "camera_source": self.camera_source,
