@@ -38,6 +38,8 @@
 - `repo/사용자 추가 폴더/` 입력 자산은 `영상 4개 + 이미지 2개`로 확인했고, README용 GIF와 이미지 산출물은 `assets/readme/build_demo_assets.py`로 재생성 가능하게 정리했다.
 - README용 데모 인물은 프레임 샘플, 등록 영상, 현재 OrangePI gallery metadata를 함께 확인한 결과 `라이언 / Ryan`으로 정리했다.
 - root README는 현재 프로젝트 작성자 관점의 설명 문장과 `환경 준비`, `매번 수동 실행`, `service 실행`을 분리한 실행 안내를 포함하는 소개 문서로 유지한다.
+- `buffalo_s`는 `pack.json`만 가진 face-only alias pack으로 유지하고, 실제 `.rknn`은 `buffalo_sc/` 산출물을 재사용한다. 이 점은 README와 conversion README에 명시한다.
+- `service 실행` 문서는 foreground 수동 실행과 `systemd` background 실행의 차이, `systemctl`, `journalctl`, install script의 역할이 바로 읽히게 유지한다.
 - `runtime.FaceSDK`는 현재 `infer`, `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`, `list_model_packs` 표면을 공개한다.
 - OrangePI에서 `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 실제로 다시 실행해 gallery match와 embedding compare 동작을 확인했다.
 - custom SDK 추가 뒤 마지막 service smoke에서 OrangePI `5000` service의 `api/status`, root HTML 응답을 다시 확인했다.

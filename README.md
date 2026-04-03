@@ -18,6 +18,7 @@
 - 실시간 주경로는 `InsightFace -> ONNX -> RKNN -> RKNN Lite2 -> OrangePI RK3588`다.
 - CPU 경로는 benchmark와 비교 검증용이고, 제품 경로는 `RKNN`이다.
 - 현재 canonical pack은 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`, 비교용 `buffalo_m_i8`다.
+- `buffalo_s`는 face-only alias pack이다. `conversion/results/model_zoo/rk3588/buffalo_s/`에는 `pack.json`만 두고, 실제 `.rknn` 파일은 `buffalo_sc/` 아래 산출물을 재사용한다.
 - 현재 안정된 기본 runtime pack은 `buffalo_m`으로 둔다.
 
 <p align="center">
@@ -154,7 +155,7 @@ bash runtime/build_web_frontend.sh
 
 ### 환경 준비가 끝난 뒤 매번 수동 실행할 때
 
-아래 두 줄이 실제 수동 실행 명령이다.
+아래 두 줄이 실제 수동 실행 명령이다. 이 방식은 현재 터미널 foreground에서 직접 띄우는 형태라서, SSH 세션을 끊으면 함께 종료된다. 설정을 자주 바꿔 가며 바로 확인할 때 이 경로를 쓴다.
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
@@ -172,12 +173,27 @@ python runtime/web_backend/main.py \
 
 ### service로 다시 실행할 때
 
-service로 다시 올릴 때는 아래 명령을 사용한다.
+여기서 `service로 실행한다`는 것은 현재 SSH 터미널에서 직접 띄우는 대신, OrangePI의 `systemd`가 web demo를 백그라운드 프로세스로 관리하게 두는 뜻이다.
+
+- SSH 연결을 끊어도 demo가 계속 살아 있다.
+- 부팅 후 자동 시작이 필요할 때 같은 unit를 그대로 재사용한다.
+- 시작, 중지, 재시작, 상태 확인을 `systemctl`로 통일한다.
+- 로그는 `journalctl`로 확인한다.
+- `runtime/install_orangepi_rknn_web_service.sh`는 현재 repo 경로, venv, camera source, port, frontend build 경로를 반영한 unit 파일을 설치 또는 갱신하고, `enable + restart`까지 한 번에 수행한다.
+
+설치 또는 갱신:
 
 ```bash
 bash runtime/install_orangepi_rknn_web_service.sh
-sudo systemctl restart insightface_gallery_web.service
+```
+
+운영 중 확인 명령:
+
+```bash
 sudo systemctl status insightface_gallery_web.service
+sudo systemctl restart insightface_gallery_web.service
+sudo systemctl stop insightface_gallery_web.service
+sudo journalctl -u insightface_gallery_web.service -n 100 -f
 ```
 
 자세한 OrangePI 실행 절차와 서비스 운영 기준은 [runtime/README.md](runtime/README.md)에 둔다.
@@ -286,6 +302,6 @@ sudo systemctl status insightface_gallery_web.service
 - wrapper가 주 제품이고 web console은 운영 인터페이스다.
 - 현재 기본 runtime pack은 `buffalo_m`이다.
 - `buffalo_m_i8`는 비교용 candidate pack으로 유지한다.
-- `buffalo_s`는 `buffalo_sc` alias pack이다.
+- `buffalo_s`는 `buffalo_sc` face-only alias pack이다. `buffalo_s/` 아래에 `.rknn` 파일이 없고 `pack.json`만 있어도 정상이며, runtime은 manifest를 읽어 실제 파일을 `buffalo_sc/`에서 연다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`다.
 - 현재 개발 보드 고정 LAN 주소는 `192.168.20.238`이다.

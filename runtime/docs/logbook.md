@@ -27,6 +27,8 @@
 - `FaceSDK`는 현재 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`까지 public helper로 제공한다.
 - `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 추가했고 OrangePI Lite2 env에서 실제로 다시 실행했다.
 - custom SDK helper 추가 뒤 마지막 service smoke에서 OrangePI `5000` service 응답을 다시 확인했다.
+- runtime README는 `수동 foreground 실행`과 `systemd service 실행`의 차이, 운영 명령, 로그 확인 방법을 함께 설명하는 기준 문서로 유지한다.
+- `buffalo_s`는 runtime에서 `buffalo_sc`로 해석되는 face-only alias pack이며, `buffalo_s/`에 별도 `.rknn` 파일이 없는 것이 정상이라는 점을 README 계층 문서에 명시한다.
 
 ## 현재 모듈 결정
 

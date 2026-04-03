@@ -27,7 +27,7 @@ bash runtime/build_web_frontend.sh
 
 ### 2. 매번 수동으로 web demo를 실행할 때
 
-환경이 이미 준비되어 있다면 아래 두 줄만 실행하면 된다.
+환경이 이미 준비되어 있다면 아래 두 줄만 실행하면 된다. 이 방식은 현재 SSH 터미널 foreground에서 직접 띄우는 형태라서, 세션을 끊으면 함께 종료된다. 설정을 자주 바꾸며 확인할 때 가장 단순하다.
 
 ```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
@@ -45,10 +45,27 @@ python runtime/web_backend/main.py \
 
 ### 3. service로 등록해서 실행할 때
 
+여기서 `service`는 OrangePI의 `systemd`가 web demo를 백그라운드에서 계속 관리하는 실행 방식이다. 즉, 사람이 로그인한 셸에서 직접 띄우는 것이 아니라 장치 운영용 프로세스로 등록해 두는 의미다.
+
+- SSH 연결이 끊겨도 demo가 계속 살아 있다.
+- 재부팅 뒤에도 자동 시작되도록 같은 unit를 유지한다.
+- 상태 확인, 재시작, 중지는 `systemctl`로 통일한다.
+- 실행 로그는 `journalctl`로 확인한다.
+- `runtime/install_orangepi_rknn_web_service.sh`는 unit 파일을 설치 또는 갱신하고 `enable + restart`까지 한 번에 수행한다.
+
+설치 또는 갱신:
+
 ```bash
 bash runtime/install_orangepi_rknn_web_service.sh
-sudo systemctl restart insightface_gallery_web.service
+```
+
+운영 중 확인 명령:
+
+```bash
 sudo systemctl status insightface_gallery_web.service
+sudo systemctl restart insightface_gallery_web.service
+sudo systemctl stop insightface_gallery_web.service
+sudo journalctl -u insightface_gallery_web.service -n 100 -f
 ```
 
 ### 4. SDK를 바로 확인할 때
@@ -128,6 +145,12 @@ python runtime/examples/sdk_custom_usage.py \
   --top-k 3 \
   --model-zoo-root conversion/results/model_zoo
 ```
+
+## model pack 메모
+
+- `buffalo_s`는 face-only alias pack이다.
+- `conversion/results/model_zoo/rk3588/buffalo_s/` 안에는 `pack.json`만 있고, 실제 `.rknn` 파일은 `buffalo_sc/` 아래 canonical 산출물을 재사용한다.
+- `runtime/rknn_model_zoo.py`가 manifest의 `alias_of: buffalo_sc`를 읽어 `buffalo_s -> buffalo_sc`로 해석하므로, `buffalo_s/`에 별도 `.rknn` 파일이 없어도 정상이다.
 
 ## 현재 사용 형태
 

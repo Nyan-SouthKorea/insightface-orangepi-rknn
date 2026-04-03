@@ -163,6 +163,14 @@ python runtime/benchmark_rknn_face_sdk.py \
 - alias pack은 `alias_of`, `face_only_alias`, `note`를 포함한다.
 - 실제 pack은 detector와 recognizer의 `onnx_filename`, `output_filename`, `output_rknn_path`, `metadata`를 함께 둔다.
 
+## `buffalo_s` alias 구조
+
+- 이 저장소의 현재 범위는 `face-only`이므로, `buffalo_s`에서 실제로 쓰는 detector와 recognizer는 `buffalo_sc`와 같은 바이너리를 재사용한다.
+- 그래서 `conversion/results/model_zoo/rk3588/buffalo_s/`에는 `.rknn` 파일을 중복 저장하지 않고 `pack.json`만 둔다.
+- `pack.json`의 `alias_of: "buffalo_sc"`와 `face_only_alias: true`를 runtime이 읽어 실제 `.rknn` 파일을 `buffalo_sc/`에서 연다.
+- `buffalo_s` zip 안에 있는 `1k3d68`, `2d106det`, `genderage` 같은 보조 모델 정보는 metadata로만 남기고, 현재 canonical runtime 경로에는 포함하지 않는다.
+- 따라서 `buffalo_s` 폴더에 `.rknn` 파일이 보이지 않아도 누락이 아니라 현재 canonical layout의 의도된 구조다.
+
 ## 현재 고정 결정
 
 - 기본 dtype은 `FP16`이다.
