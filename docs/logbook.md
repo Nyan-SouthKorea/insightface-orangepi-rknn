@@ -19,7 +19,7 @@
 - host RKNN 변환 환경은 `../envs/ifr_rknn_host_cp310`, OrangePI RKNN Lite2 환경은 `../envs/ifr_rknn_lite2_cp310`으로 잡았다.
 - face-only 기준 canonical `RKNN model zoo`는 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l` 네 이름으로 정리했고, 비교용 `buffalo_m_i8`도 추가했다.
 - 현재 기본 runtime pack은 `buffalo_m`로 둔다.
-- 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
+- `OrangePI`는 고정 LAN 주소 정책으로 운영하고, 실제 주소·gateway·DNS 같은 네트워크 세부는 로컬 전용 문서에만 둔다.
 - 현재 `OrangePI` 서비스와 수동 smoke는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
 - local SDK 표면으로 `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 유지한다.
 - `runtime.FaceSDK`는 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`를 함께 여는 상위 import 이름으로 유지한다.
@@ -164,7 +164,7 @@
 - 2026-04-01: 도구 스크립트와 git 저장소가 아직 없으므로, 부트스트랩 예외를 `AGENT.md`와 logbook에 반영하기로 결정했다.
 - 2026-04-01: `docs/AGENT.md`의 예시를 변환, 양자화 검증, 실기기 benchmark 중심으로 보정했다.
 - 2026-04-01: `../secrets/README.local.md`를 만들고 `OrangePI` SSH 접속 메모를 로컬 전용으로 기록했다.
-- 2026-04-01: `ssh orangepi@192.168.20.238 'hostname; whoami; uname -m'` smoke 결과 `orangepicm5`, `orangepi`, `aarch64`를 확인했다.
+- 2026-04-01: `ssh orangepi@<orangepi-host> 'hostname; whoami; uname -m'` smoke 결과 `orangepicm5`, `orangepi`, `aarch64`를 확인했다.
 - 2026-04-01: `assets/prompts`는 이전 LLM 작업 흔적으로 판단해 삭제 대상으로 정리하고, 이를 유도한 `AGENT` 문장도 함께 제거했다.
 - 2026-04-01: 로컬 git 저장소 초기화와 첫 push smoke는 완료 상태로 current truth를 갱신했다.
 - 2026-04-01: reference 저장소 `jetson-face-speaker-recognition`를 `/tmp/jetson-face-speaker-recognition`에 clone해 구조를 확인했다.
@@ -173,11 +173,11 @@
 - 2026-04-01: `face-only` gallery 인식 웹 데모, CPU 검증용 requirements, OrangePI venv 생성 스크립트, systemd 설치 스크립트와 템플릿을 추가했다.
 - 2026-04-01: 로컬 `../envs/ifr_ort_cpu_probe` 생성 smoke에서 `onnxruntime 1.24.4`, 사용 가능 provider `AzureExecutionProvider`, `CPUExecutionProvider`, `buffalo_s` 초기화를 확인했다.
 - 2026-04-01: OrangePI에서 `python3.10-venv`를 설치한 뒤 `../envs/ifr_ort_cpu_probe` 생성과 `onnxruntime 1.23.2` CPU provider 초기화를 확인했다.
-- 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://192.168.20.238:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
+- 2026-04-01: OrangePI에서 `insightface_gallery_web.service`를 설치했고, 같은 네트워크에서 `http://<orangepi-host>:5000/`, `/api/status`, `/stream.mjpg` 응답을 확인했다.
 - 2026-04-01: OrangePI 카메라 probe 결과 초기에는 `20`에서 읽기 성공을 확인했지만, 이후 USB 장치 번호 재배치로 서비스가 다시 실패하는 상황을 확인했다.
 - 2026-04-01: OrangePI 장치 재점검 결과 USB 카메라는 `/dev/video21`, stable path는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`로 확인했다.
 - 2026-04-01: 웹 데모를 `capture`, `inference`, `render` 세 thread로 분리하고, overlay에 `capture_fps`, `infer_fps`, `stream_fps`를 표시하도록 바꿨다.
-- 2026-04-01: OrangePI LAN 연결을 `nmcli`로 manual 고정 IP로 전환해 재부팅 뒤에도 `192.168.20.238`을 유지하게 설정했다.
+- 2026-04-01: OrangePI LAN 연결을 `nmcli`로 manual 고정 주소 정책으로 전환해 재부팅 뒤에도 같은 장치 주소를 유지하게 설정했다.
 - 2026-04-01: OrangePI CPU benchmark를 `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_l` 네 pack으로 측정했고, 현재 기준 균형점은 `buffalo_s`, 최대 경량 후보는 `buffalo_sc`로 우선 판단했다.
 - 2026-04-01: 최신 commit pull 뒤 `insightface_gallery_web.service`를 다시 설치했고, `camera-source=/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`, `capture_fps 8.33`, `inference_fps 1.05`, `stream_fps 8.95`, `last_error=""` 상태를 확인했다.
 - 2026-04-01: 사용자가 `에이전트 모드`를 선언했고, 큰 실행 순서를 `1차 RKNN 변환 성공 -> 전체 모델 확장 -> SDK화 -> 새 web demo`로 고정했다.
@@ -208,7 +208,7 @@
 - 2026-04-01: old CPU demo 파일 `runtime/face_gallery_web_demo.py`, `runtime/install_orangepi_service.sh`, `runtime/insightface_gallery_web.service.template`는 더 이상 canonical 경로가 아니라고 판단해 삭제 대상으로 전환했다.
 - 2026-04-01: 새 service 설치 스크립트가 `/tmp/insightface_gallery_web.service` 고정 파일명 때문에 root 소유 파일과 충돌하는 문제를 확인했고, `mktemp` 기반 임시 파일로 수정했다.
 - 2026-04-01: OrangePI가 `00614a0`까지 pull한 뒤 `insightface_gallery_web.service`를 새 `FastAPI + React` web console로 교체했고, `5000`에서 `runtime/web_backend/main.py`가 실제로 기동하는 것을 확인했다.
-- 2026-04-01: `http://192.168.20.238:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 확인했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 모델 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
+- 2026-04-01: `http://<orangepi-host>:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 확인했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 모델 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
 - 2026-04-01: `5050` 수동 smoke 프로세스는 내렸고, 최종적으로 `5000`만 listen 중인 상태를 확인했다.
 - 2026-04-01: web console이 느리게 보이던 원인이 frontend의 `1초 polling`과 backend의 `12 FPS` 인위 제한임을 확인했고, `live-state stream + 최신 프레임 우선 추론`으로 교체했다.
 - 2026-04-01: gallery UI를 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 구조로 다시 나눠 저장된 인물 관리가 화면에서 바로 보이게 정리했다.

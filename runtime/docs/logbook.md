@@ -159,7 +159,7 @@
 - 2026-04-01: 새 service 설치 스크립트는 `sudo` 실행 시 `SUDO_USER`를 따라가게 수정했고, old CPU demo 파일은 삭제 대상으로 전환했다.
 - 2026-04-01: 새 service 설치 스크립트의 `/tmp` 고정 파일명 충돌을 `mktemp` 기반 임시 파일로 수정했다.
 - 2026-04-01: OrangePI가 최신 commit을 pull한 뒤 `insightface_gallery_web.service`를 새 `FastAPI + React` web console로 교체했고, `5000`에서 `runtime/web_backend/main.py`가 실제로 기동하는 것을 확인했다.
-- 2026-04-01: `http://192.168.20.238:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 검증했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
+- 2026-04-01: `http://<orangepi-host>:5000/`, `/stream.mjpg`, `/api/status`, `/api/model-pack/select`를 다시 검증했고, 서비스 모드에서도 `buffalo_sc -> buffalo_m` 전환과 `RKNNLite` 상태 표시가 정상 동작함을 확인했다.
 - 2026-04-01: `live-state` API와 상태 스트림을 추가했고, `capture_revision`, `result_revision`, 실제 추론 시간 표시를 새 frontend에 연결했다.
 - 2026-04-01: gallery UI를 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 구조로 다시 정리해 저장된 인물 관리가 더 잘 보이게 수정했다.
 - 2026-04-01: `buffalo_m_i8` pack을 추가했고, OrangePI benchmark에서 `pipeline 38.63 ms / 25.89 FPS`를 기록했다.

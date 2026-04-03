@@ -82,7 +82,7 @@ python conversion/export_insightface_pack_rknn.py \
 python conversion/prepare_rknn_calibration_dataset.py \
   --output-dir conversion/results/calibration/buffalo_m_i8 \
   --source-glob runtime/results/face_benchmark_input.jpg \
-  --snapshot-url http://192.168.20.238:5000/api/snapshot.jpg \
+  --snapshot-url http://<orangepi-host>:5000/api/snapshot.jpg \
   --snapshot-count 24 \
   --snapshot-interval 0.25
 ```

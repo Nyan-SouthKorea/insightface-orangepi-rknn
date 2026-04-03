@@ -304,4 +304,4 @@ sudo journalctl -u insightface_gallery_web.service -n 100 -f
 - `buffalo_m_i8`는 비교용 candidate pack으로 유지한다.
 - `buffalo_s`는 `buffalo_sc` face-only alias pack이다. `buffalo_s/` 아래에 `.rknn` 파일이 없고 `pack.json`만 있어도 정상이며, runtime은 manifest를 읽어 실제 파일을 `buffalo_sc/`에서 연다.
 - gallery 저장 구조는 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*`다.
-- 현재 개발 보드 고정 LAN 주소는 `192.168.20.238`이다.
+- 개발 보드는 고정 LAN 주소 정책으로 운영하고, 실제 주소는 tracked 문서에 남기지 않는다.
