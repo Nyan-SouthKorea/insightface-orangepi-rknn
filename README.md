@@ -3,11 +3,11 @@
 > `InsightFace` model zoo를 `Rockchip RK3588`용 `RKNN` model zoo로 정리하고, 이를 `SDK + web console` 형태로 묶어 `OrangePI`에서 바로 쓰기 쉽게 만든 프로젝트다.
 
 <p align="center">
-  <img src="assets/readme/orangepi-5-ultra-overview.png" alt="Orange Pi 5 Ultra overview" width="74%" />
+  <img src="assets/readme/demo_live-recognition_ryan.gif" alt="Live recognition demo" width="86%" />
 </p>
 
 <p align="center">
-  <img src="assets/readme/rk3588-family-badge.png" alt="Rockchip RK3588 family badge" width="180" />
+  Live Recognition hero demo. 현재 기본 runtime pack은 <code>buffalo_m</code>이다.
 </p>
 
 ## 한눈에 보기
@@ -19,6 +19,14 @@
 - CPU 경로는 benchmark와 비교 검증용이고, 제품 경로는 `RKNN`이다.
 - 현재 canonical pack은 `buffalo_sc`, `buffalo_s(alias)`, `buffalo_m`, `buffalo_l`, 비교용 `buffalo_m_i8`다.
 - 현재 안정된 기본 runtime pack은 `buffalo_m`으로 둔다.
+
+<p align="center">
+  <img src="assets/readme/orangepi-5-ultra-overview.png" alt="Orange Pi 5 Ultra overview" width="74%" />
+</p>
+
+<p align="center">
+  <img src="assets/readme/rk3588-family-badge.png" alt="Rockchip RK3588 family badge" width="180" />
+</p>
 
 ## Demo
 
@@ -50,26 +58,107 @@
 - `assets/readme/`
   - root README가 직접 참조하는 데모 GIF와 하드웨어 이미지
 
-## SDK 형태
+## SDK Quick Start
 
-이 프로젝트의 주 제품은 web demo 자체가 아니라, 앱 코드에서 바로 가져다 쓸 수 있는 `FaceSDK`다.
+OrangePI에서 바로 import해서 쓸 수 있는 가장 짧은 경로는 아래와 같다.
+
+```bash
+bash runtime/setup_orangepi_rknn_lite2_env.sh
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+```
 
 ```python
+import cv2
+from runtime import FaceSDK
+
+frame = cv2.imread("runtime/results/face_benchmark_input.jpg")
+
+sdk = FaceSDK(
+    gallery_dir="runtime/gallery",
+    model_pack="buffalo_m",
+    backend="rknn",
+    model_zoo_root="conversion/results/model_zoo",
+)
+
+print(sdk.describe())
+print(sdk.list_gallery_people())
+print(sdk.infer(frame))
+sdk.close()
+```
+
+실행 가능한 예제는 아래 두 파일에 둔다.
+
+- 간단 사용법: [runtime/examples/sdk_quickstart.py](runtime/examples/sdk_quickstart.py)
+- 커스텀 사용법: [runtime/examples/sdk_custom_usage.py](runtime/examples/sdk_custom_usage.py)
+
+## Custom SDK Usage
+
+기본 `infer(frame)` 외에도, 외부 사용자가 직접 제어할 수 있는 표면을 열어 두었다.
+
+```python
+import cv2
 from runtime import FaceSDK
 
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
     backend="rknn",
+    model_zoo_root="conversion/results/model_zoo",
 )
 
-result = sdk.infer(frame)
-print(result)
+frame_a = cv2.imread("frame_a.jpg")
+frame_b = cv2.imread("frame_b.jpg")
+
+detections = sdk.detect_faces(frame_a)
+embedding_a = sdk.extract_embedding(frame_a)
+embedding_b = sdk.extract_embedding(frame_b)
+gallery_matches = sdk.match_embedding(embedding_a, top_k=3)
+pair_similarity = FaceSDK.compare_embeddings(embedding_a, embedding_b)
+
+print(detections)
+print(gallery_matches)
+print(pair_similarity)
 sdk.close()
 ```
 
-web console은 이 SDK를 감싼 운영 인터페이스다.  
-즉 `FaceSDK`는 재사용 가능한 제품 표면이고, web console은 모델 관리와 현장 검증을 위한 유지보수형 entry다.
+현재 custom 표면은 아래 범위를 지원한다.
+
+- `sdk.detect_faces(frame)`
+- `sdk.extract_face_embeddings(frame)`
+- `sdk.extract_embedding(frame, face_index=0)`
+- `sdk.match_embedding(embedding, top_k=...)`
+- `sdk.list_gallery_people()`
+- `FaceSDK.compare_embeddings(embedding_a, embedding_b)`
+- `FaceSDK.list_model_packs()`
+
+## Web Demo
+
+수동 실행 명령은 아래 기준으로 유지한다.
+
+```bash
+bash runtime/setup_orangepi_rknn_lite2_env.sh
+bash runtime/setup_orangepi_rknn_web_env.sh
+bash runtime/build_web_frontend.sh
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/web_backend/main.py \
+  --host 0.0.0.0 \
+  --port 5000 \
+  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
+  --gallery-dir runtime/gallery \
+  --model-pack buffalo_m \
+  --backend rknn \
+  --inference-fps 0 \
+  --model-zoo-root conversion/results/model_zoo \
+  --frontend-dist runtime/web_frontend/dist
+```
+
+service 설치는 아래 entry를 사용한다.
+
+```bash
+bash runtime/install_orangepi_rknn_web_service.sh
+```
+
+자세한 OrangePI 실행 절차와 서비스 운영 기준은 [runtime/README.md](runtime/README.md)에 둔다.
 
 ## Benchmark
 
@@ -77,7 +166,7 @@ web console은 이 SDK를 감싼 운영 인터페이스다.
 
 - 실행 위치: `OrangePI RK3588`
 - 실행 환경: `onnxruntime 1.23.2`, `CPUExecutionProvider`
-- 입력: `runtime/results/face_benchmark_input.jpg`
+- 결과 JSON: [runtime/results/260401_1530_ort_cpu_benchmark/summary.json](runtime/results/260401_1530_ort_cpu_benchmark/summary.json)
 - 해석: CPU 경로는 비교 기준선이다. 제품 실시간 경로로 보지 않는다.
 
 | model pack | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |
@@ -91,54 +180,56 @@ web console은 이 SDK를 감싼 운영 인터페이스다.
 
 - 실행 위치: `OrangePI RK3588`
 - 실행 환경: `RKNN Lite2`
-- 해석: 아래 표는 device-side steady-state benchmark다.
-- `buffalo_m_i8`는 비교용 candidate pack이고, 기본 pack은 아직 `buffalo_m`이다.
+- 결과 JSON: [runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json](runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json)
+- 조건: `warmup 5`, `repeat 20`
+- 해석: 아래 표는 selectable pack 전체를 다시 측정한 device-side steady-state benchmark다.
 
-| model pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | top result | similarity |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| `buffalo_m` | `FP16` | 458.73 | 47.36 | 25.31 | 80.92 | 12.36 | `DongHoon` | 0.6306 |
-| `buffalo_m_i8` | `INT8` | 295.71 | 25.39 | 11.55 | 38.63 | 25.89 | `DongHoon` | 0.6300 |
+| model pack | resolved pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | result count |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `buffalo_sc` | `buffalo_sc` | `FP16` | 354.14 | 54.02 | 6.28 | 46.96 | 21.29 | 1 |
+| `buffalo_s` | `buffalo_sc` | `FP16` | 270.52 | 46.13 | 6.03 | 65.67 | 15.23 | 1 |
+| `buffalo_m` | `buffalo_m` | `FP16` | 586.53 | 58.82 | 24.73 | 95.01 | 10.52 | 1 |
+| `buffalo_m_i8` | `buffalo_m_i8` | `INT8` | 390.42 | 27.70 | 11.19 | 46.36 | 21.57 | 1 |
+| `buffalo_l` | `buffalo_l` | `FP16` | 618.27 | 110.31 | 25.81 | 116.20 | 8.61 | 1 |
 
 ### 해석 요약
 
 - CPU에서는 `buffalo_sc`와 `buffalo_s`가 그나마 실시간에 가까웠지만, `buffalo_m`, `buffalo_l`는 실시간 운영용으로는 무겁다.
-- RKNN으로 옮기면 `buffalo_m`이 `80.92 ms / 12.36 FPS`, `buffalo_m_i8`가 `38.63 ms / 25.89 FPS`까지 내려온다.
-- 즉 이 프로젝트는 `CPU로 버티는 구조`가 아니라 `NPU 주경로로 재배치하는 구조`다.
+- RKNN으로 옮기면 `buffalo_m`은 `95.01 ms / 10.52 FPS`, `buffalo_m_i8`는 `46.36 ms / 21.57 FPS`까지 내려온다.
+- `buffalo_sc`는 가장 빠른 FP16 pack이고, `buffalo_m_i8`는 현재 가장 빠른 전체 pack이다.
+- 기본 pack은 여전히 `buffalo_m`으로 유지하고, `buffalo_m_i8`는 비교용 후보로 계속 검증한다.
 
 ## `RKNN Lite2`는 무엇인가
 
-`Lite`라는 이름 때문에 종종 `가벼운 대신 성능이나 정확도가 떨어지는 열화판`처럼 보이지만, 여기서는 그런 의미가 아니다.
+`Lite`라는 이름은 여기서 성능 열화판을 뜻하는 것이 아니라, target device에서 쓰는 배포용 runtime 계층을 가리키는 명칭이다.
 
 - `RKNN-Toolkit2`
   - host PC에서 `ONNX -> RKNN` 변환, build, quantization, calibration을 수행하는 개발 도구
 - `RKNN Lite2`
   - OrangePI 같은 target device에서 `.rknn` 모델을 실제로 실행하는 runtime API
 
-즉 이 프로젝트에서 `Lite2`를 쓴 이유는 `대충 경량화해서`가 아니라, `RK3588 배포 장치에서 공식 runtime 경로가 그것이기 때문`이다.  
+즉 이 프로젝트에서 `Lite2`를 쓰는 이유는 `RK3588 배포 장치에서 공식 runtime 경로가 그것이기 때문`이다.  
 모델 품질과 정확도는 `원본 InsightFace pack`, `FP16/INT8 선택`, `calibration dataset`, `runtime 설정`이 결정하고, `Lite2`라는 이름 자체가 정확도 열화를 뜻하지는 않는다.
 
-또한 여기서 말하는 `Lite2`에 대응되는 어떤 `무거운 고급판 runtime`을 일부러 버린 것이 아니다.  
-host에서는 `Toolkit2`, device에서는 `Lite2`를 쓰는 조합이 정상적인 분업이다.
+이 프로젝트에서는 host의 `Toolkit2`와 device의 `Lite2`가 역할을 나눠 동작한다.  
+즉 변환과 양자화는 host에서, 실제 배포 추론은 device-side runtime에서 맡는 구조다.
 
-## 이 프로젝트가 실제로 한 일
+## 변환과 검증 범위
 
-이 저장소는 `공식 Rockchip 경로`를 쓰되, 그 위에 `InsightFace용 제품 레이어`를 직접 얹었다.
+이 저장소는 `공식 Rockchip 도구 체인`을 기반으로, `InsightFace`용 재현 가능한 변환 및 배포 레이어를 직접 구성한다.
 
 - 공식으로 사용한 것
   - `rknn-toolkit2`
   - `rknnlite.api`
   - device-side `librknnrt`
-- 이 repo에서 직접 만든 것
+- 이 repo에서 직접 구성한 것
   - InsightFace pack 선별과 alias 정책
-  - pack 구조 정규화
   - detector / recognizer별 RKNN export
   - `pack.json` manifest와 `model zoo` 구조
   - `FaceSDK`, `FaceWrapper`, gallery manager
   - OrangePI benchmark, model switching, web console, service 운영
 
-즉 `이미 인터넷에 떠도는 완성된 RKNN InsightFace 모델을 그대로 받아서 포장한 프로젝트`가 아니다.  
-반대로 `RKNN 자체를 역공학해서 비공식 포맷으로 억지 변환한 프로젝트`도 아니다.  
-정확한 위치는 `공식 Rockchip toolchain을 사용해, InsightFace pack을 이 repo에서 직접 변환·검증·포장한 프로젝트`다.
+즉 source model은 `InsightFace`에서 오고, `.rknn` 산출물과 SDK/web 통합 레이어는 이 repository에서 `Toolkit2` 기준으로 직접 생성하고 검증한다.
 
 ## 현재 주경로
 

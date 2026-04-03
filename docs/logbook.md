@@ -10,7 +10,7 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `README demo asset 정리 + root README refresh` 단계다.
+- 현재 단계는 `SDK public API 정리 + all-pack RKNN benchmark + README/runtime docs refresh` 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
 - 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web console`을 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
@@ -22,6 +22,7 @@
 - 현재 `OrangePI` 고정 LAN 주소는 `eth0 = 192.168.20.238/24`, gateway `192.168.20.4`, DNS `168.126.63.1`이다.
 - 현재 `OrangePI` 서비스와 수동 smoke는 숫자 인덱스보다 `camera-source`를 우선 사용하며, 현재 USB 카메라 기준 대표 경로는 `/dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0`이다.
 - local SDK 표면으로 `runtime.FaceSDK`와 `FaceSDK.list_model_packs()`를 유지한다.
+- `runtime.FaceSDK`는 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`를 함께 여는 상위 import 이름으로 유지한다.
 - local 기준 새 web console은 `runtime/web_backend/main.py`와 `runtime/web_frontend/` 조합으로 구현했다.
 - 새 web console backend는 `FastAPI`, frontend는 `React + Vite`로 고정했다.
 - 새 web console backend는 `모델 전환`, `메모리 정리`, `gallery 등록`, `촬영 저장`, `다중 업로드`, `삭제`, `MJPEG 스트리밍`, `상태 API`, `live-state stream`을 지원한다.
@@ -32,11 +33,14 @@
 - 기존 화면이 `1초에 1~2번만 바뀌는 것처럼 보이던` 원인은 frontend의 `1초 polling`과 backend의 `12 FPS` 인위 제한이 겹친 것이었고, 현재는 `live-state stream + 최신 프레임 우선 추론`으로 정리했다.
 - 현재 갤러리 UI는 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 세 영역으로 다시 나눴다.
 - OrangePI `5000` service는 현재 `runtime/web_backend/main.py` 기준으로 유지 중이고, `buffalo_m` 복귀 상태에서 `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `avg_inference_duration_ms 52.5`, `gallery_count 1`를 확인했다.
-- OrangePI benchmark 기준 `buffalo_m_i8`는 `pipeline 38.63 ms / 25.89 FPS`로, `buffalo_m`의 `80.92 ms / 12.36 FPS`보다 빨랐다.
+- OrangePI all-pack benchmark를 다시 실행했고, `buffalo_sc 21.29 FPS`, `buffalo_m_i8 21.57 FPS`, `buffalo_m 10.52 FPS`, `buffalo_l 8.61 FPS`를 확인했다.
 - root README가 직접 참조하는 공용 자산은 현재 `assets/readme/`에 둔다.
 - `repo/사용자 추가 폴더/` 입력 자산은 `영상 4개 + 이미지 2개`로 확인했고, README용 GIF와 이미지 산출물은 `assets/readme/build_demo_assets.py`로 재생성 가능하게 정리했다.
 - README용 데모 인물은 프레임 샘플, 등록 영상, 현재 OrangePI gallery metadata를 함께 확인한 결과 `라이언 / Ryan`으로 정리했다.
-- root README는 현재 `데모 GIF`, `CPU / RKNN benchmark`, `RKNN Lite2` 배경, `공식 Rockchip toolchain + repo custom wrapper` 설명까지 포함하는 소개 문서로 다시 정리했다.
+- root README는 현재 hero GIF, `CPU / RKNN benchmark`, `RKNN Lite2` 배경, `SDK quick start`, `custom usage`, `manual web demo run`까지 포함하는 소개 문서로 다시 정리했다.
+- `runtime.FaceSDK`는 현재 `infer`, `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`, `list_model_packs` 표면을 공개한다.
+- OrangePI에서 `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 실제로 다시 실행해 gallery match와 embedding compare 동작을 확인했다.
+- custom SDK 추가 뒤에도 OrangePI `5000` service의 `api/status`, root HTML 응답을 다시 확인해 web demo가 그대로 살아 있음을 확인했다.
 
 ## 현재 전역 결정
 
@@ -99,62 +103,61 @@
 - 입력 이미지: `runtime/results/face_benchmark_input.jpg`
 - gallery 입력: `/tmp/rknn_gallery_smoke_stage2/테스트, TestUser/face.jpg`
 
-| model pack | resolved pack | load ms | infer ms | top result | similarity | det score |
+| model pack | resolved pack | load ms | infer ms | match name | similarity | det score |
 | --- | --- | ---: | ---: | --- | ---: | ---: |
 | buffalo_s | buffalo_sc | 659.93 | 54.20 | TestUser | 1.00 | 0.6807 |
 | buffalo_m | buffalo_m | 575.48 | 156.22 | TestUser | 1.00 | 0.6494 |
 | buffalo_l | buffalo_l | 4389.70 | 124.09 | TestUser | 1.00 | 0.6753 |
 
-## 현재 RKNN `FP16 vs INT8` 비교
+## 현재 RKNN all-pack benchmark
 
 - 실행 위치: `OrangePI RK3588`, `../envs/ifr_rknn_lite2_cp310`
 - 실행 명령:
-  - `python runtime/benchmark_rknn_face_sdk.py --image-path runtime/results/face_benchmark_input.jpg --gallery-dir runtime/gallery --model-packs buffalo_m,buffalo_m_i8 --repeat 20 --warmup 5 --output-json runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json`
+  - `python runtime/benchmark_rknn_face_sdk.py --image-path runtime/results/face_benchmark_input.jpg --gallery-dir runtime/gallery --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_m_i8,buffalo_l --repeat 20 --warmup 5 --output-json runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`
 - 결과 JSON:
-  - `runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json`
+  - `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`
 
-| model pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | top result | similarity |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| buffalo_m | fp | 458.73 | 47.36 | 25.31 | 80.92 | 12.36 | DongHoon | 0.6306 |
-| buffalo_m_i8 | i8 | 295.71 | 25.39 | 11.55 | 38.63 | 25.89 | DongHoon | 0.6300 |
+| model pack | resolved pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | result count |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| buffalo_sc | buffalo_sc | fp | 354.14 | 54.02 | 6.28 | 46.96 | 21.29 | 1 |
+| buffalo_s | buffalo_sc | fp | 270.52 | 46.13 | 6.03 | 65.67 | 15.23 | 1 |
+| buffalo_m | buffalo_m | fp | 586.53 | 58.82 | 24.73 | 95.01 | 10.52 | 1 |
+| buffalo_m_i8 | buffalo_m_i8 | i8 | 390.42 | 27.70 | 11.19 | 46.36 | 21.57 | 1 |
+| buffalo_l | buffalo_l | fp | 618.27 | 110.31 | 25.81 | 116.20 | 8.61 | 1 |
 
 ## 현재 활성 체크리스트
 
 - 이번 실행의 목표
-  - README가 직접 쓰는 demo GIF와 보드 이미지를 canonical 위치에 정리한다.
-  - root README를 제품 소개 문서 형태로 다시 정리한다.
-  - CPU / RKNN benchmark와 `RKNN Lite2` 배경 설명을 README에 올린다.
+  - README와 runtime README에 OrangePI SDK 사용법과 custom 사용법을 canonical 형태로 정리한다.
+  - selectable pack 전체 기준 RKNN benchmark를 다시 문서화한다.
+  - custom SDK 추가 뒤에도 web demo가 그대로 동작함을 재검증한다.
 - 이번 실행의 비범위
-  - runtime backend / frontend 기능 변경
-  - 새로운 모델 pack 추가 변환
+  - 새로운 RKNN 모델 변환
+  - frontend 기능 추가 개발
 - 수정 대상 파일과 역할
-  - `assets/readme/*`: README용 공용 자산과 재생성 스크립트
-  - `README.md`: 프로젝트 소개, benchmark, RKNN 배경 설명
-  - `docs/logbook.md`: current truth 반영
-- 생성되거나 갱신되는 산출물 경로
-  - `assets/readme/demo_live-recognition_ryan.gif`
-  - `assets/readme/demo_model-switching_ryan.gif`
-  - `assets/readme/demo_gallery-registration_ryan.gif`
-  - `assets/readme/demo_npu-monitoring_ryan.gif`
-  - `assets/readme/orangepi-5-ultra-overview.png`
-  - `assets/readme/rk3588-family-badge.png`
-  - `assets/readme/demo_assets.json`
+  - `README.md`: hero GIF, benchmark, SDK quick start, custom usage, web demo run command
+  - `runtime/README.md`: OrangePI venv setup, 예제 코드, service command
+  - `docs/logbook.md`: current truth와 all-pack benchmark 반영
+  - `runtime/docs/logbook.md`: 모듈 관점 current truth와 all-pack benchmark 반영
+  - `runtime/results/260401_1530_ort_cpu_benchmark/summary.json`: CPU baseline canonical 결과
+  - `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`: RKNN all-pack canonical 결과
 - 다음 단계 연결
-  - README 자산과 benchmark 설명은 이후 공개 소개 문구와 문서 고도화의 기준이 된다.
-  - `assets/readme/build_demo_assets.py`는 새 데모 자산이 추가될 때 같은 규칙으로 재사용한다.
+  - README와 runtime README는 이후 SDK 사용자와 web demo 운영자가 바로 읽는 시작 문서가 된다.
+  - all-pack benchmark는 기본 pack 선택과 추가 INT8 검증의 기준이 된다.
 - 검증 방법과 완료 조건
-  - demo GIF 4개와 이미지 2개가 `assets/readme/`에 존재한다.
-  - root README가 새 자산을 직접 참조한다.
-  - README에 CPU 표, RKNN 표, `RKNN Lite2` 설명, 변환 provenance 설명이 모두 들어간다.
+  - README와 runtime README에 수동 실행 명령과 SDK 예제가 모두 들어간다.
+  - 특정 인물 이름이 benchmark 표에 섞여 들어가지 않는다.
+  - OrangePI `api/status`와 root HTML 응답이 custom SDK 추가 뒤에도 정상이다.
 - 체크리스트
-  - [x] `사용자 추가 폴더` 입력 자산 인벤토리 확인
-  - [x] 대표 프레임 샘플로 데모 인물과 화면 구성을 재확인
-  - [x] README용 GIF 4개 생성
-  - [x] 입력 이미지 2개를 README용 자산으로 정리
-  - [x] 자산 생성 스크립트 추가
-  - [x] `demo_assets.json`에 이름 추론 근거 기록
-  - [x] root README 전면 개편
-  - [x] canonical logbook 갱신
+  - [x] `FaceSDK` custom public API 추가
+  - [x] `runtime/examples/sdk_quickstart.py` 추가
+  - [x] `runtime/examples/sdk_custom_usage.py` 추가
+  - [x] OrangePI example smoke 재검증
+  - [x] RKNN all-pack benchmark 재실행
+  - [x] README hero / benchmark / SDK 문구 정리
+  - [x] runtime README 실행 명령 정리
+  - [x] project logbook 갱신
+  - [x] runtime logbook 갱신
 
 ## Recent Logs
 
@@ -219,3 +222,9 @@
 - 2026-04-03: root README가 직접 쓰는 공용 자산을 `assets/readme/` 아래로 정리하고, `build_demo_assets.py`로 GIF 4개와 이미지 2개를 재생성 가능하게 만들었다.
 - 2026-04-03: `demo_assets.json`에 입력 자산 메타데이터, 샘플 프레임 인덱스, `라이언 / Ryan` 추론 근거를 기록했다.
 - 2026-04-03: root README를 데모 GIF, CPU/RKNN benchmark, `RKNN Lite2` 설명, `공식 Rockchip toolchain + custom wrapper` 설명 중심으로 전면 개편했다.
+
+- 2026-04-03: `FaceSDK`에 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`를 public helper로 정리했다.
+- 2026-04-03: `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 추가하고 OrangePI에서 gallery match, embedding compare smoke를 다시 통과했다.
+- 2026-04-03: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_m_i8`, `buffalo_l` 전체 pack 기준 RKNN benchmark를 다시 실행했고 canonical 결과를 `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`으로 올렸다.
+- 2026-04-03: custom SDK 추가 뒤에도 OrangePI `5000` service의 root HTML과 `api/status`를 다시 확인했고 web demo가 그대로 동작함을 재확인했다.
+- 2026-04-03: OrangePI working tree에서 구형 subset benchmark 결과 `runtime/results/260401_1828_rknn_face_sdk_benchmark/`를 제거하고 CPU baseline + all-pack 결과만 남겼다.

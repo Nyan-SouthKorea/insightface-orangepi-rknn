@@ -22,8 +22,11 @@
 - OrangePI `5050` 수동 smoke에서 `buffalo_sc`, `buffalo_m`, `buffalo_l` 전환과 메모리 정리가 정상 동작함을 확인했다.
 - OrangePI `5050` 수동 smoke에서 gallery API의 생성, 촬영 저장, 업로드, 삭제를 확인했다.
 - OrangePI `5000` service는 현재 새 web console로 교체를 마쳤고, `buffalo_m` 복귀 상태에서 `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `gallery_count 1`를 확인했다.
-- `buffalo_m_i8` pack을 추가했고 OrangePI benchmark에서 `pipeline 38.63 ms / 25.89 FPS`를 확인했다.
+- `buffalo_m_i8` pack을 포함해 selectable pack 전체 benchmark를 다시 실행했고, 현재 fastest pack은 `buffalo_m_i8 21.57 FPS`, 기본 pack `buffalo_m`은 `10.52 FPS`를 기록했다.
 - old CPU demo source와 old service 설치 스크립트는 canonical repo에서 제거했다.
+- `FaceSDK`는 현재 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`까지 public helper로 제공한다.
+- `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 추가했고 OrangePI Lite2 env에서 실제로 다시 실행했다.
+- custom SDK helper 추가 뒤에도 OrangePI `5000` service가 정상 응답하는 것을 다시 확인했다.
 
 ## 현재 모듈 결정
 
@@ -37,6 +40,7 @@
 - 현재 `RKNN Lite2` 입력은 `raw RGB uint8 NHWC`로 넣고, 변환 시 넣은 `mean/std`를 runtime에서 다시 적용하지 않는다.
 - `runtime/rknn_model_zoo.py`는 현재 `pack.json` manifest와 alias를 읽어 `buffalo_s -> buffalo_sc` 같은 pack 선택을 해석한다.
 - `runtime.FaceSDK`는 현재 앱 코드와 future backend API가 공용으로 쓰는 SDK-style import 이름이다.
+- `runtime.FaceSDK`는 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`, `list_model_packs`를 안정된 public surface로 유지한다.
 - gallery 로컬 자산은 `runtime/gallery/<person_id>/meta.json`, `runtime/gallery/<person_id>/images/*` 구조로 두고 git으로 추적하지 않는다.
 - service 설치 스크립트는 `camera-source`를 자동 선택해 unit 파일에 박아 넣는다.
 - wrapper가 주 제품이고 web demo는 사람 확인용 entry다.
@@ -85,33 +89,37 @@
 - 입력 이미지: `runtime/results/face_benchmark_input.jpg`
 - gallery 입력: `/tmp/rknn_gallery_smoke_stage2/테스트, TestUser/face.jpg`
 
-| model pack | resolved pack | load ms | infer ms | top result | similarity | det score |
+| model pack | resolved pack | load ms | infer ms | match name | similarity | det score |
 | --- | --- | ---: | ---: | --- | ---: | ---: |
 | buffalo_s | buffalo_sc | 659.93 | 54.20 | TestUser | 1.00 | 0.6807 |
 | buffalo_m | buffalo_m | 575.48 | 156.22 | TestUser | 1.00 | 0.6494 |
 | buffalo_l | buffalo_l | 4389.70 | 124.09 | TestUser | 1.00 | 0.6753 |
 
-## 현재 `FP16 vs INT8` benchmark
+## 현재 RKNN all-pack benchmark
 
 - 실행 위치: `OrangePI RK3588`
 - 실행 명령:
-  - `../envs/ifr_rknn_lite2_cp310/bin/python runtime/benchmark_rknn_face_sdk.py --image-path runtime/results/face_benchmark_input.jpg --gallery-dir runtime/gallery --model-packs buffalo_m,buffalo_m_i8 --repeat 20 --warmup 5 --output-json runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json`
+  - `../envs/ifr_rknn_lite2_cp310/bin/python runtime/benchmark_rknn_face_sdk.py --image-path runtime/results/face_benchmark_input.jpg --gallery-dir runtime/gallery --model-packs buffalo_sc,buffalo_s,buffalo_m,buffalo_m_i8,buffalo_l --repeat 20 --warmup 5 --output-json runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`
+- 결과 JSON: `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`
 
-| model pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | top result | similarity |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
-| buffalo_m | fp | 458.73 | 47.36 | 25.31 | 80.92 | 12.36 | DongHoon | 0.6306 |
-| buffalo_m_i8 | i8 | 295.71 | 25.39 | 11.55 | 38.63 | 25.89 | DongHoon | 0.6300 |
+| model pack | resolved pack | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | result count |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| buffalo_sc | buffalo_sc | fp | 354.14 | 54.02 | 6.28 | 46.96 | 21.29 | 1 |
+| buffalo_s | buffalo_sc | fp | 270.52 | 46.13 | 6.03 | 65.67 | 15.23 | 1 |
+| buffalo_m | buffalo_m | fp | 586.53 | 58.82 | 24.73 | 95.01 | 10.52 | 1 |
+| buffalo_m_i8 | buffalo_m_i8 | i8 | 390.42 | 27.70 | 11.19 | 46.36 | 21.57 | 1 |
+| buffalo_l | buffalo_l | fp | 618.27 | 110.31 | 25.81 | 116.20 | 8.61 | 1 |
 
 ## 현재 활성 체크리스트
 
-- [x] gallery 관리 UI 가시성 개선
-- [x] `프로필 추가`와 `이름 변경 저장` 흐름 분리
-- [x] `/api/live-state`와 `/api/live-state/stream` 추가
-- [x] backend 추론 루프를 최신 프레임 우선 구조로 수정
-- [x] `capture_revision`, `result_revision`, 실제 추론 시간 표시
-- [x] `buffalo_m_i8` pack UI 전환 확인
-- [x] OrangePI `FP16 vs INT8` benchmark
-- [x] 반복 모델 전환 메모리 smoke
+- [x] `FaceSDK` custom public API 정리
+- [x] `sdk_quickstart.py` 추가
+- [x] `sdk_custom_usage.py` 추가
+- [x] OrangePI Lite2 env example smoke
+- [x] selectable pack 전체 benchmark 재실행
+- [x] root README 사용법 정리
+- [x] runtime README 사용법 정리
+- [x] custom SDK helper 추가 뒤 web demo 재검증
 
 ## Recent Logs
 
@@ -157,3 +165,9 @@
 - 2026-04-01: `buffalo_m_i8` pack을 추가했고, OrangePI benchmark에서 `pipeline 38.63 ms / 25.89 FPS`를 기록했다.
 - 2026-04-01: 서비스 모델 전환 `buffalo_sc -> buffalo_m_i8 -> buffalo_l -> buffalo_m`을 다시 실행했고 모두 warm switch로 통과했다.
 - 2026-04-01: 활성 `MJPEG` 연결이 열린 상태에서 `systemctl restart`가 `deactivating`에 오래 머무를 수 있음을 봤고, 이 경우 `SIGKILL -> start`로 정리 후 재기동했다.
+
+- 2026-04-03: `FaceSDK` custom helper를 public surface로 정리해 detection, embedding, gallery match, cosine similarity compare를 직접 호출할 수 있게 했다.
+- 2026-04-03: `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 추가했고 OrangePI Lite2 env에서 실제 출력과 gallery match를 다시 확인했다.
+- 2026-04-03: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_m_i8`, `buffalo_l` 전체 pack 기준 benchmark를 다시 실행했고, canonical 결과는 `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`으로 정리했다.
+- 2026-04-03: custom SDK helper 추가 뒤에도 `http://127.0.0.1:5000/`, `/api/status` 응답을 다시 확인해 기존 web demo가 영향을 받지 않음을 확인했다.
+- 2026-04-03: OrangePI working tree에서 구형 subset benchmark 결과 `runtime/results/260401_1828_rknn_face_sdk_benchmark/`를 제거하고 현재 canonical 결과만 남겼다.

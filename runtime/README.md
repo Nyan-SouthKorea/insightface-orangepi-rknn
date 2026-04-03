@@ -6,22 +6,143 @@
 - 핵심 산출물은 `import해서 쓰는 RKNN face SDK`와 `front / back 분리형 web console`이다.
 - 현재 canonical runtime 경로는 `buffalo_m` 기본 pack과 `RKNN Lite2` 기준으로 맞춘다.
 
-## 현재 사용 형태
+## Quick Start on OrangePI
 
-- 앱 코드에서는 `runtime.FaceSDK` 또는 `runtime.face_wrapper.FaceWrapper`를 import해서 쓴다.
-- 운영 화면은 `runtime/web_backend/main.py`와 `runtime/web_frontend/dist/`를 함께 띄워 쓴다.
-- service 설치는 `runtime/install_orangepi_rknn_web_service.sh`가 맡는다.
+### 1. venv 준비
+
+```bash
+bash runtime/setup_orangepi_rknn_lite2_env.sh
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+```
+
+web demo까지 같이 쓸 때는 아래 두 명령을 추가한다.
+
+```bash
+bash runtime/setup_orangepi_rknn_web_env.sh
+bash runtime/build_web_frontend.sh
+```
+
+### 2. 간단 사용법
 
 ```python
+import cv2
+from runtime import FaceSDK
+
+frame = cv2.imread("runtime/results/face_benchmark_input.jpg")
+
+sdk = FaceSDK(
+    gallery_dir="runtime/gallery",
+    model_pack="buffalo_m",
+    backend="rknn",
+    model_zoo_root="conversion/results/model_zoo",
+)
+
+print(sdk.describe())
+print(sdk.list_gallery_people())
+print(sdk.infer(frame))
+sdk.close()
+```
+
+실행 예제:
+
+```bash
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/examples/sdk_quickstart.py \
+  --image-path runtime/results/face_benchmark_input.jpg \
+  --gallery-dir runtime/gallery \
+  --model-pack buffalo_m \
+  --backend rknn \
+  --model-zoo-root conversion/results/model_zoo
+```
+
+### 3. 커스텀 사용법
+
+외부 사용자가 detection, embedding, cosine similarity, gallery matching을 직접 제어할 수 있도록 public helper를 연다.
+
+```python
+import cv2
 from runtime import FaceSDK
 
 sdk = FaceSDK(
     gallery_dir="runtime/gallery",
     model_pack="buffalo_m",
     backend="rknn",
+    model_zoo_root="conversion/results/model_zoo",
 )
-results = sdk.infer(frame)
+
+frame_a = cv2.imread("frame_a.jpg")
+frame_b = cv2.imread("frame_b.jpg")
+
+detections = sdk.detect_faces(frame_a)
+embeddings = sdk.extract_face_embeddings(frame_a)
+embedding_a = sdk.extract_embedding(frame_a)
+embedding_b = sdk.extract_embedding(frame_b)
+gallery_matches = sdk.match_embedding(embedding_a, top_k=3)
+pair_similarity = FaceSDK.compare_embeddings(embedding_a, embedding_b)
+
+print(detections)
+print(embeddings[0]["bbox"] if embeddings else None)
+print(gallery_matches)
+print(pair_similarity)
+sdk.close()
 ```
+
+실행 예제:
+
+```bash
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/examples/sdk_custom_usage.py \
+  --image-path-a runtime/results/face_benchmark_input.jpg \
+  --gallery-dir runtime/gallery \
+  --model-pack buffalo_m \
+  --backend rknn \
+  --top-k 3 \
+  --model-zoo-root conversion/results/model_zoo
+```
+
+### 4. web demo 수동 실행
+
+```bash
+bash runtime/setup_orangepi_rknn_lite2_env.sh
+bash runtime/setup_orangepi_rknn_web_env.sh
+bash runtime/build_web_frontend.sh
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/web_backend/main.py \
+  --host 0.0.0.0 \
+  --port 5000 \
+  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
+  --gallery-dir runtime/gallery \
+  --model-pack buffalo_m \
+  --backend rknn \
+  --inference-fps 0 \
+  --model-zoo-root conversion/results/model_zoo \
+  --frontend-dist runtime/web_frontend/dist
+```
+
+service 설치:
+
+```bash
+bash runtime/install_orangepi_rknn_web_service.sh
+sudo systemctl restart insightface_gallery_web.service
+sudo systemctl status insightface_gallery_web.service
+```
+
+## 현재 사용 형태
+
+- 앱 코드에서는 `runtime.FaceSDK` 또는 `runtime.face_wrapper.FaceWrapper`를 import해서 쓴다.
+- 운영 화면은 `runtime/web_backend/main.py`와 `runtime/web_frontend/dist/`를 함께 띄워 쓴다.
+- service 설치는 `runtime/install_orangepi_rknn_web_service.sh`가 맡는다.
+
+## Public SDK Surface
+
+- `FaceSDK.infer(frame)`
+- `FaceSDK.detect_faces(frame)`
+- `FaceSDK.extract_face_embeddings(frame)`
+- `FaceSDK.extract_embedding(frame, face_index=0)`
+- `FaceSDK.match_embedding(embedding, top_k=...)`
+- `FaceSDK.list_gallery_people()`
+- `FaceSDK.compare_embeddings(embedding_a, embedding_b)`
+- `FaceSDK.list_model_packs()`
 
 ## 이 모듈이 맡는 것
 
@@ -49,16 +170,10 @@ results = sdk.infer(frame)
 - 웹 UI는 현재 프레임 저장과 다중 업로드를 모두 이 구조로 저장한다.
 - 이전 `한글이름, EnglishName/` 폴더 구조는 읽기 호환만 유지한다.
 
-## OrangePI 실행 순서
+## benchmark 결과 파일
 
-1. `bash runtime/setup_orangepi_rknn_lite2_env.sh`
-2. `bash runtime/setup_orangepi_rknn_web_env.sh`
-3. `bash runtime/build_web_frontend.sh`
-4. 필요하면 `source ../envs/ifr_rknn_lite2_cp310/bin/activate`
-5. 수동 smoke:
-   `python runtime/web_backend/main.py --host 0.0.0.0 --port 5050 --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 --gallery-dir runtime/gallery --model-pack buffalo_m --backend rknn --inference-fps 0 --model-zoo-root conversion/results/model_zoo --frontend-dist runtime/web_frontend/dist`
-6. service 설치:
-   `bash runtime/install_orangepi_rknn_web_service.sh`
+- CPU baseline: [results/260401_1530_ort_cpu_benchmark/summary.json](results/260401_1530_ort_cpu_benchmark/summary.json)
+- RKNN all-pack benchmark: [results/260403_0942_rknn_all_pack_benchmark/summary.json](results/260403_0942_rknn_all_pack_benchmark/summary.json)
 
 ## 현재 고정 결정
 
@@ -79,6 +194,10 @@ results = sdk.infer(frame)
   - 앱 코드와 backend가 공용으로 쓰는 SDK-style 표면
 - `runtime/face_wrapper.py`
   - import해서 쓰는 얇은 공용 wrapper
+- `runtime/examples/sdk_quickstart.py`
+  - gallery 자동 로드 + `infer(frame)` 예제
+- `runtime/examples/sdk_custom_usage.py`
+  - detection, embedding, cosine similarity, gallery top-k 예제
 - `runtime/web_backend/main.py`
   - `FastAPI` backend entry
 - `runtime/web_backend/app.py`
@@ -86,7 +205,7 @@ results = sdk.infer(frame)
 - `runtime/web_backend/runtime_manager.py`
   - 카메라, SDK, FPS, 모델 전환, gallery 작업을 묶는 런타임 관리자
 - `runtime/benchmark_rknn_face_sdk.py`
-  - OrangePI에서 `FP16 / INT8` pack 비교 benchmark
+  - OrangePI에서 `FP16 / INT8 / all-pack` 비교 benchmark
 - `runtime/web_frontend/`
   - 운영용 web UI source와 build 결과
 - `runtime/install_orangepi_rknn_web_service.sh`

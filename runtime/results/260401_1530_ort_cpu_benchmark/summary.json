@@ -1,0 +1,130 @@
+{
+  "image_path": "runtime/results/face_benchmark_input.jpg",
+  "provider": "CPUExecutionProvider",
+  "det_size": 640,
+  "warmup": 5,
+  "repeat": 20,
+  "results": [
+    {
+      "model_pack": "buffalo_sc",
+      "status": "ok",
+      "provider": "CPUExecutionProvider",
+      "release_pack_size_mb": 14.3,
+      "detection_model_file": "det_500m.onnx",
+      "recognition_model_file": "w600k_mbf.onnx",
+      "repeat": 20,
+      "warmup": 5,
+      "face_count": 1,
+      "detection": {
+        "avg_ms": 49.21,
+        "median_ms": 46.71,
+        "min_ms": 46.17,
+        "max_ms": 96.93
+      },
+      "recognition": {
+        "avg_ms": 23.09,
+        "median_ms": 21.29,
+        "min_ms": 20.99,
+        "max_ms": 36.64
+      },
+      "pipeline": {
+        "avg_ms": 139.57,
+        "median_ms": 134.62,
+        "min_ms": 96.89,
+        "max_ms": 196.13
+      },
+      "pipeline_fps": 7.16
+    },
+    {
+      "model_pack": "buffalo_s",
+      "status": "ok",
+      "provider": "CPUExecutionProvider",
+      "release_pack_size_mb": 121.7,
+      "detection_model_file": "det_500m.onnx",
+      "recognition_model_file": "w600k_mbf.onnx",
+      "repeat": 20,
+      "warmup": 5,
+      "face_count": 1,
+      "detection": {
+        "avg_ms": 50.6,
+        "median_ms": 48.37,
+        "min_ms": 47.44,
+        "max_ms": 90.83
+      },
+      "recognition": {
+        "avg_ms": 27.01,
+        "median_ms": 23.38,
+        "min_ms": 22.44,
+        "max_ms": 72.78
+      },
+      "pipeline": {
+        "avg_ms": 160.37,
+        "median_ms": 153.96,
+        "min_ms": 127.51,
+        "max_ms": 276.03
+      },
+      "pipeline_fps": 6.24
+    },
+    {
+      "model_pack": "buffalo_m",
+      "status": "ok",
+      "provider": "CPUExecutionProvider",
+      "release_pack_size_mb": 263.2,
+      "detection_model_file": "det_2.5g.onnx",
+      "recognition_model_file": "w600k_r50.onnx",
+      "repeat": 20,
+      "warmup": 5,
+      "face_count": 1,
+      "detection": {
+        "avg_ms": 152.8,
+        "median_ms": 138.01,
+        "min_ms": 131.06,
+        "max_ms": 310.85
+      },
+      "recognition": {
+        "avg_ms": 318.9,
+        "median_ms": 294.84,
+        "min_ms": 290.88,
+        "max_ms": 687.01
+      },
+      "pipeline": {
+        "avg_ms": 635.75,
+        "median_ms": 614.63,
+        "min_ms": 555.98,
+        "max_ms": 883.69
+      },
+      "pipeline_fps": 1.57
+    },
+    {
+      "model_pack": "buffalo_l",
+      "status": "ok",
+      "provider": "CPUExecutionProvider",
+      "release_pack_size_mb": 275.3,
+      "detection_model_file": "det_10g.onnx",
+      "recognition_model_file": "w600k_r50.onnx",
+      "repeat": 20,
+      "warmup": 5,
+      "face_count": 1,
+      "detection": {
+        "avg_ms": 573.89,
+        "median_ms": 575.75,
+        "min_ms": 484.33,
+        "max_ms": 760.65
+      },
+      "recognition": {
+        "avg_ms": 429.12,
+        "median_ms": 389.42,
+        "min_ms": 380.71,
+        "max_ms": 741.09
+      },
+      "pipeline": {
+        "avg_ms": 1102.1,
+        "median_ms": 1029.06,
+        "min_ms": 970.15,
+        "max_ms": 1409.4
+      },
+      "pipeline_fps": 0.91
+    }
+  ],
+  "markdown_table": "| model pack | status | zip size MB | detection model | recognition model | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS |\n| --- | --- | ---: | --- | --- | ---: | ---: | ---: | ---: |\n| buffalo_sc | ok | 14.3 | det_500m.onnx | w600k_mbf.onnx | 49.21 | 23.09 | 139.57 | 7.16 |\n| buffalo_s | ok | 121.7 | det_500m.onnx | w600k_mbf.onnx | 50.6 | 27.01 | 160.37 | 6.24 |\n| buffalo_m | ok | 263.2 | det_2.5g.onnx | w600k_r50.onnx | 152.8 | 318.9 | 635.75 | 1.57 |\n| buffalo_l | ok | 275.3 | det_10g.onnx | w600k_r50.onnx | 573.89 | 429.12 | 1102.1 | 0.91 |"
+}

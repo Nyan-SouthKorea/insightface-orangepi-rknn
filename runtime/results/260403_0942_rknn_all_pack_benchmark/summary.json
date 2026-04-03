@@ -1,0 +1,172 @@
+{
+  "image_path": "runtime/results/face_benchmark_input.jpg",
+  "gallery_dir": "runtime/gallery",
+  "model_zoo_root": "conversion/results/model_zoo",
+  "threshold": 0.6,
+  "det_size": 640,
+  "warmup": 5,
+  "repeat": 20,
+  "results": [
+    {
+      "model_pack": "buffalo_sc",
+      "status": "ok",
+      "resolved_model_pack": "buffalo_sc",
+      "dtype": "fp",
+      "load_ms": 354.14,
+      "warmup": 5,
+      "repeat": 20,
+      "gallery_count": 1,
+      "detector_model": "det_500m_fp16.rknn",
+      "recognizer_model": "w600k_mbf_fp16.rknn",
+      "detection": {
+        "avg_ms": 54.02,
+        "median_ms": 52.42,
+        "min_ms": 47.14,
+        "max_ms": 67.85
+      },
+      "recognition": {
+        "avg_ms": 6.28,
+        "median_ms": 6.13,
+        "min_ms": 4.83,
+        "max_ms": 9.17
+      },
+      "pipeline": {
+        "avg_ms": 46.96,
+        "median_ms": 47.27,
+        "min_ms": 40.34,
+        "max_ms": 56.35
+      },
+      "pipeline_fps": 21.29,
+      "result_count": 1
+    },
+    {
+      "model_pack": "buffalo_s",
+      "status": "ok",
+      "resolved_model_pack": "buffalo_sc",
+      "dtype": "fp",
+      "load_ms": 270.52,
+      "warmup": 5,
+      "repeat": 20,
+      "gallery_count": 1,
+      "detector_model": "det_500m_fp16.rknn",
+      "recognizer_model": "w600k_mbf_fp16.rknn",
+      "detection": {
+        "avg_ms": 46.13,
+        "median_ms": 48.43,
+        "min_ms": 36.52,
+        "max_ms": 57.49
+      },
+      "recognition": {
+        "avg_ms": 6.03,
+        "median_ms": 5.57,
+        "min_ms": 5.5,
+        "max_ms": 8.07
+      },
+      "pipeline": {
+        "avg_ms": 65.67,
+        "median_ms": 64.59,
+        "min_ms": 60.14,
+        "max_ms": 80.01
+      },
+      "pipeline_fps": 15.23,
+      "result_count": 1
+    },
+    {
+      "model_pack": "buffalo_m",
+      "status": "ok",
+      "resolved_model_pack": "buffalo_m",
+      "dtype": "fp",
+      "load_ms": 586.53,
+      "warmup": 5,
+      "repeat": 20,
+      "gallery_count": 1,
+      "detector_model": "det_2.5g_fp16.rknn",
+      "recognizer_model": "w600k_r50_fp16.rknn",
+      "detection": {
+        "avg_ms": 58.82,
+        "median_ms": 56.16,
+        "min_ms": 44.89,
+        "max_ms": 83.8
+      },
+      "recognition": {
+        "avg_ms": 24.73,
+        "median_ms": 24.16,
+        "min_ms": 23.52,
+        "max_ms": 29.65
+      },
+      "pipeline": {
+        "avg_ms": 95.01,
+        "median_ms": 94.63,
+        "min_ms": 73.45,
+        "max_ms": 128.95
+      },
+      "pipeline_fps": 10.52,
+      "result_count": 1
+    },
+    {
+      "model_pack": "buffalo_m_i8",
+      "status": "ok",
+      "resolved_model_pack": "buffalo_m_i8",
+      "dtype": "i8",
+      "load_ms": 390.42,
+      "warmup": 5,
+      "repeat": 20,
+      "gallery_count": 1,
+      "detector_model": "det_2.5g_int8.rknn",
+      "recognizer_model": "w600k_r50_int8.rknn",
+      "detection": {
+        "avg_ms": 27.7,
+        "median_ms": 26.07,
+        "min_ms": 22.96,
+        "max_ms": 41.51
+      },
+      "recognition": {
+        "avg_ms": 11.19,
+        "median_ms": 11.12,
+        "min_ms": 11.07,
+        "max_ms": 11.88
+      },
+      "pipeline": {
+        "avg_ms": 46.36,
+        "median_ms": 44.46,
+        "min_ms": 35.67,
+        "max_ms": 70.55
+      },
+      "pipeline_fps": 21.57,
+      "result_count": 1
+    },
+    {
+      "model_pack": "buffalo_l",
+      "status": "ok",
+      "resolved_model_pack": "buffalo_l",
+      "dtype": "fp",
+      "load_ms": 618.27,
+      "warmup": 5,
+      "repeat": 20,
+      "gallery_count": 1,
+      "detector_model": "det_10g_fp16.rknn",
+      "recognizer_model": "w600k_r50_fp16.rknn",
+      "detection": {
+        "avg_ms": 110.31,
+        "median_ms": 107.26,
+        "min_ms": 86.27,
+        "max_ms": 143.22
+      },
+      "recognition": {
+        "avg_ms": 25.81,
+        "median_ms": 23.85,
+        "min_ms": 23.42,
+        "max_ms": 30.4
+      },
+      "pipeline": {
+        "avg_ms": 116.2,
+        "median_ms": 113.87,
+        "min_ms": 103.36,
+        "max_ms": 145.81
+      },
+      "pipeline_fps": 8.61,
+      "result_count": 1
+    }
+  ],
+  "markdown_table": "| model pack | status | resolved | dtype | load ms | detection avg ms | recognition avg ms | pipeline avg ms | pipeline FPS | result count |\n| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n| buffalo_sc | ok | buffalo_sc | fp | 354.14 | 54.02 | 6.28 | 46.96 | 21.29 | 1 |\n| buffalo_s | ok | buffalo_sc | fp | 270.52 | 46.13 | 6.03 | 65.67 | 15.23 | 1 |\n| buffalo_m | ok | buffalo_m | fp | 586.53 | 58.82 | 24.73 | 95.01 | 10.52 | 1 |\n| buffalo_m_i8 | ok | buffalo_m_i8 | i8 | 390.42 | 27.7 | 11.19 | 46.36 | 21.57 | 1 |\n| buffalo_l | ok | buffalo_l | fp | 618.27 | 110.31 | 25.81 | 116.2 | 8.61 | 1 |"
+}
