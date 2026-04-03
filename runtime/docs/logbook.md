@@ -21,12 +21,12 @@
 - OrangePI `5050` 수동 smoke에서 새 web console이 실제 카메라를 열고 동작하는 것을 확인했다.
 - OrangePI `5050` 수동 smoke에서 `buffalo_sc`, `buffalo_m`, `buffalo_l` 전환과 메모리 정리가 정상 동작함을 확인했다.
 - OrangePI `5050` 수동 smoke에서 gallery API의 생성, 촬영 저장, 업로드, 삭제를 확인했다.
-- OrangePI `5000` service는 현재 새 web console로 교체를 마쳤고, `buffalo_m` 복귀 상태에서 `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `gallery_count 1`를 확인했다.
+- OrangePI `5000` service는 현재 사용자의 수동 실행 검증을 위해 중지한 상태다. 마지막 service 확인 시 `buffalo_m`, `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `gallery_count 1`를 기록했다.
 - `buffalo_m_i8` pack을 포함해 selectable pack 전체 benchmark를 다시 실행했고, 현재 fastest pack은 `buffalo_m_i8 21.57 FPS`, 기본 pack `buffalo_m`은 `10.52 FPS`를 기록했다.
 - old CPU demo source와 old service 설치 스크립트는 canonical repo에서 제거했다.
 - `FaceSDK`는 현재 `detect_faces`, `extract_face_embeddings`, `extract_embedding`, `match_embedding`, `compare_embeddings`, `list_gallery_people`까지 public helper로 제공한다.
 - `runtime/examples/sdk_quickstart.py`, `runtime/examples/sdk_custom_usage.py`를 추가했고 OrangePI Lite2 env에서 실제로 다시 실행했다.
-- custom SDK helper 추가 뒤에도 OrangePI `5000` service가 정상 응답하는 것을 다시 확인했다.
+- custom SDK helper 추가 뒤 마지막 service smoke에서 OrangePI `5000` service 응답을 다시 확인했다.
 
 ## 현재 모듈 결정
 
@@ -112,14 +112,12 @@
 
 ## 현재 활성 체크리스트
 
-- [x] `FaceSDK` custom public API 정리
-- [x] `sdk_quickstart.py` 추가
-- [x] `sdk_custom_usage.py` 추가
-- [x] OrangePI Lite2 env example smoke
-- [x] selectable pack 전체 benchmark 재실행
-- [x] root README 사용법 정리
-- [x] runtime README 사용법 정리
-- [x] custom SDK helper 추가 뒤 web demo 재검증
+- [x] `AGENT` 문체 원칙 반영
+- [x] root README 데모 설명 문장 정리
+- [x] root README web demo 실행 안내 분리
+- [x] runtime README를 `환경 준비`, `매번 수동 실행`, `service 실행` 구조로 정리
+- [x] project logbook 현재 상태 반영
+- [x] runtime logbook 현재 상태 반영
 
 ## Recent Logs
 
@@ -171,3 +169,5 @@
 - 2026-04-03: `buffalo_sc`, `buffalo_s`, `buffalo_m`, `buffalo_m_i8`, `buffalo_l` 전체 pack 기준 benchmark를 다시 실행했고, canonical 결과는 `runtime/results/260403_0942_rknn_all_pack_benchmark/summary.json`으로 정리했다.
 - 2026-04-03: custom SDK helper 추가 뒤에도 `http://127.0.0.1:5000/`, `/api/status` 응답을 다시 확인해 기존 web demo가 영향을 받지 않음을 확인했다.
 - 2026-04-03: OrangePI working tree에서 구형 subset benchmark 결과 `runtime/results/260401_1828_rknn_face_sdk_benchmark/`를 제거하고 현재 canonical 결과만 남겼다.
+- 2026-04-03: 사용자의 수동 실행 검증을 위해 OrangePI `5000` service를 중지했고, 현재 `5000` 포트가 비어 있는 상태를 확인했다.
+- 2026-04-03: tracked 문서는 프로젝트 작성자나 운영자가 직접 정리한 기술 문서처럼 쓰는 기준을 `docs/AGENT.md`에 반영했다.

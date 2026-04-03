@@ -6,23 +6,52 @@
 - 핵심 산출물은 `import해서 쓰는 RKNN face SDK`와 `front / back 분리형 web console`이다.
 - 현재 canonical runtime 경로는 `buffalo_m` 기본 pack과 `RKNN Lite2` 기준으로 맞춘다.
 
-## Quick Start on OrangePI
+## OrangePI 실행 안내
 
-### 1. venv 준비
+### 1. 환경이 아직 설치되지 않았을 때
+
+아래 세 명령은 처음 1회 환경을 만들거나, 패키지 구성이 바뀌었을 때 다시 실행한다.
 
 ```bash
 bash runtime/setup_orangepi_rknn_lite2_env.sh
-source ../envs/ifr_rknn_lite2_cp310/bin/activate
-```
-
-web demo까지 같이 쓸 때는 아래 두 명령을 추가한다.
-
-```bash
 bash runtime/setup_orangepi_rknn_web_env.sh
 bash runtime/build_web_frontend.sh
 ```
 
-### 2. 간단 사용법
+- `setup_orangepi_rknn_lite2_env.sh`
+  - RKNN Lite2와 SDK 기본 실행 환경을 준비한다.
+- `setup_orangepi_rknn_web_env.sh`
+  - web backend 실행에 필요한 패키지를 맞춘다.
+- `build_web_frontend.sh`
+  - frontend를 실제 배포용 정적 파일로 다시 빌드한다.
+
+### 2. 매번 수동으로 web demo를 실행할 때
+
+환경이 이미 준비되어 있다면 아래 두 줄만 실행하면 된다.
+
+```bash
+source ../envs/ifr_rknn_lite2_cp310/bin/activate
+python runtime/web_backend/main.py \
+  --host 0.0.0.0 \
+  --port 5000 \
+  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
+  --gallery-dir runtime/gallery \
+  --model-pack buffalo_m \
+  --backend rknn \
+  --inference-fps 0 \
+  --model-zoo-root conversion/results/model_zoo \
+  --frontend-dist runtime/web_frontend/dist
+```
+
+### 3. service로 등록해서 실행할 때
+
+```bash
+bash runtime/install_orangepi_rknn_web_service.sh
+sudo systemctl restart insightface_gallery_web.service
+sudo systemctl status insightface_gallery_web.service
+```
+
+### 4. SDK를 바로 확인할 때
 
 ```python
 import cv2
@@ -55,7 +84,7 @@ python runtime/examples/sdk_quickstart.py \
   --model-zoo-root conversion/results/model_zoo
 ```
 
-### 3. 커스텀 사용법
+### 5. 커스텀 기능을 직접 호출할 때
 
 외부 사용자가 detection, embedding, cosine similarity, gallery matching을 직접 제어할 수 있도록 public helper를 연다.
 
@@ -98,33 +127,6 @@ python runtime/examples/sdk_custom_usage.py \
   --backend rknn \
   --top-k 3 \
   --model-zoo-root conversion/results/model_zoo
-```
-
-### 4. web demo 수동 실행
-
-```bash
-bash runtime/setup_orangepi_rknn_lite2_env.sh
-bash runtime/setup_orangepi_rknn_web_env.sh
-bash runtime/build_web_frontend.sh
-source ../envs/ifr_rknn_lite2_cp310/bin/activate
-python runtime/web_backend/main.py \
-  --host 0.0.0.0 \
-  --port 5000 \
-  --camera-source /dev/v4l/by-id/usb-Sonix_Technology_Co.__Ltd._USB_2.0_Camera_SN0001-video-index0 \
-  --gallery-dir runtime/gallery \
-  --model-pack buffalo_m \
-  --backend rknn \
-  --inference-fps 0 \
-  --model-zoo-root conversion/results/model_zoo \
-  --frontend-dist runtime/web_frontend/dist
-```
-
-service 설치:
-
-```bash
-bash runtime/install_orangepi_rknn_web_service.sh
-sudo systemctl restart insightface_gallery_web.service
-sudo systemctl status insightface_gallery_web.service
 ```
 
 ## 현재 사용 형태

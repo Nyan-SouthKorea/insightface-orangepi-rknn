@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  Live Recognition hero demo. 현재 기본 runtime pack은 <code>buffalo_m</code>이다.
+  OrangePI RK3588에서 <code>buffalo_m</code> pack으로 실행한 실시간 얼굴 인식 화면이다.
 </p>
 
 ## 한눈에 보기
@@ -30,9 +30,9 @@
 
 ## Demo
 
-아래 GIF는 `repo/사용자 추가 폴더`에 놓인 demo 영상 4개와 이미지 2개를 기준으로 다시 정리한 README 자산이다.  
-프레임 샘플과 현재 gallery metadata를 함께 확인한 결과, 데모 인물은 모두 `라이언 / Ryan`으로 정리했다.  
-생성 스크립트와 분석 근거는 [assets/readme/build_demo_assets.py](assets/readme/build_demo_assets.py), [assets/readme/demo_assets.json](assets/readme/demo_assets.json)에 남긴다.
+아래 영상은 OrangePI RK3588에서 얼굴 인식, 모델 전환, 갤러리 등록, NPU 동작을 실시간으로 확인한 데모다.  
+README에는 표시용 GIF를 사용하고, 원본 입력 자산은 `repo/사용자 추가 폴더/` 기준으로 관리한다.  
+데모 인물 표기는 현재 gallery metadata 기준 `라이언 / Ryan`으로 맞췄고, GIF 재생성 스크립트는 [assets/readme/build_demo_assets.py](assets/readme/build_demo_assets.py), 입력 메모는 [assets/readme/demo_assets.json](assets/readme/demo_assets.json)에 둔다.
 
 | Live Recognition | Model Switching |
 | --- | --- |
@@ -86,7 +86,7 @@ print(sdk.infer(frame))
 sdk.close()
 ```
 
-실행 가능한 예제는 아래 두 파일에 둔다.
+예제 스크립트는 아래 두 파일을 사용한다.
 
 - 간단 사용법: [runtime/examples/sdk_quickstart.py](runtime/examples/sdk_quickstart.py)
 - 커스텀 사용법: [runtime/examples/sdk_custom_usage.py](runtime/examples/sdk_custom_usage.py)
@@ -133,12 +133,30 @@ sdk.close()
 
 ## Web Demo
 
-수동 실행 명령은 아래 기준으로 유지한다.
+web demo는 `환경 준비`, `매번 수동 실행`, `service 실행`을 나눠 보는 편이 가장 명확하다.
+
+### 환경이 아직 준비되지 않았을 때
+
+아래 세 명령은 처음 1회 환경을 만들거나, 패키지 구성이 바뀌었을 때 다시 실행한다.
 
 ```bash
 bash runtime/setup_orangepi_rknn_lite2_env.sh
 bash runtime/setup_orangepi_rknn_web_env.sh
 bash runtime/build_web_frontend.sh
+```
+
+- `setup_orangepi_rknn_lite2_env.sh`
+  - RKNN Lite2와 런타임 기본 패키지를 준비한다.
+- `setup_orangepi_rknn_web_env.sh`
+  - web backend 실행에 필요한 패키지를 맞춘다.
+- `build_web_frontend.sh`
+  - frontend를 실제 배포용 정적 파일로 다시 빌드한다.
+
+### 환경 준비가 끝난 뒤 매번 수동 실행할 때
+
+아래 두 줄이 실제 수동 실행 명령이다.
+
+```bash
 source ../envs/ifr_rknn_lite2_cp310/bin/activate
 python runtime/web_backend/main.py \
   --host 0.0.0.0 \
@@ -152,10 +170,14 @@ python runtime/web_backend/main.py \
   --frontend-dist runtime/web_frontend/dist
 ```
 
-service 설치는 아래 entry를 사용한다.
+### service로 다시 실행할 때
+
+service로 다시 올릴 때는 아래 명령을 사용한다.
 
 ```bash
 bash runtime/install_orangepi_rknn_web_service.sh
+sudo systemctl restart insightface_gallery_web.service
+sudo systemctl status insightface_gallery_web.service
 ```
 
 자세한 OrangePI 실행 절차와 서비스 운영 기준은 [runtime/README.md](runtime/README.md)에 둔다.
