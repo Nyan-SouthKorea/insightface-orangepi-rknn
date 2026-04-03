@@ -10,7 +10,7 @@
 
 ## 현재 프로젝트 스냅샷
 
-- 현재 단계는 `web console 후속 개선 + INT8 비교 benchmark 완료` 단계다.
+- 현재 단계는 `README demo asset 정리 + root README refresh` 단계다.
 - 프로젝트 목표는 `InsightFace -> ONNX -> RKNN -> OrangePI RK3588 실시간 추론` 주경로를 안정적으로 만드는 것이다.
 - 최종 산출물 방향은 `SDK처럼 import하는 RKNN wrapper`와 `front / back이 분리된 별도 web console`을 분리하는 구조로 고정했다.
 - 현재 canonical 모듈은 `conversion/`과 `runtime/` 두 개다.
@@ -33,7 +33,10 @@
 - 현재 갤러리 UI는 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 세 영역으로 다시 나눴다.
 - OrangePI `5000` service는 현재 `runtime/web_backend/main.py` 기준으로 유지 중이고, `buffalo_m` 복귀 상태에서 `capture_fps 9.98`, `inference_fps 10.14`, `last_inference_duration_ms 45.1`, `avg_inference_duration_ms 52.5`, `gallery_count 1`를 확인했다.
 - OrangePI benchmark 기준 `buffalo_m_i8`는 `pipeline 38.63 ms / 25.89 FPS`로, `buffalo_m`의 `80.92 ms / 12.36 FPS`보다 빨랐다.
-- 현재 요청된 개선 작업은 닫혔고, 다음 결정 포인트는 `기본 pack을 buffalo_m 유지`할지 `buffalo_m_i8`로 올릴지다.
+- root README가 직접 참조하는 공용 자산은 현재 `assets/readme/`에 둔다.
+- `repo/사용자 추가 폴더/` 입력 자산은 `영상 4개 + 이미지 2개`로 확인했고, README용 GIF와 이미지 산출물은 `assets/readme/build_demo_assets.py`로 재생성 가능하게 정리했다.
+- README용 데모 인물은 프레임 샘플, 등록 영상, 현재 OrangePI gallery metadata를 함께 확인한 결과 `라이언 / Ryan`으로 정리했다.
+- root README는 현재 `데모 GIF`, `CPU / RKNN benchmark`, `RKNN Lite2` 배경, `공식 Rockchip toolchain + repo custom wrapper` 설명까지 포함하는 소개 문서로 다시 정리했다.
 
 ## 현재 전역 결정
 
@@ -118,40 +121,40 @@
 ## 현재 활성 체크리스트
 
 - 이번 실행의 목표
-  - gallery 관리 UI를 더 분명하게 드러낸다.
-  - 실시간 갱신 속도를 실제 추론 속도와 맞춘다.
-  - `INT8` calibration과 `buffalo_m_i8` 비교 결과를 남긴다.
+  - README가 직접 쓰는 demo GIF와 보드 이미지를 canonical 위치에 정리한다.
+  - root README를 제품 소개 문서 형태로 다시 정리한다.
+  - CPU / RKNN benchmark와 `RKNN Lite2` 배경 설명을 README에 올린다.
 - 이번 실행의 비범위
-  - 새로운 얼굴 모델 아키텍처 추가
-  - speaker 경로 재도입
+  - runtime backend / frontend 기능 변경
+  - 새로운 모델 pack 추가 변환
 - 수정 대상 파일과 역할
-  - `runtime/web_backend/*`: 상태 스트림과 추론 루프
-  - `runtime/web_frontend/*`: gallery manager UI와 overlay 상태
-  - `conversion/*`: INT8 calibration 준비와 pack export
-  - `README.md`, `docs/logbook.md`, 모듈 `README.md`, 모듈 `docs/logbook.md`: current truth 반영
+  - `assets/readme/*`: README용 공용 자산과 재생성 스크립트
+  - `README.md`: 프로젝트 소개, benchmark, RKNN 배경 설명
+  - `docs/logbook.md`: current truth 반영
 - 생성되거나 갱신되는 산출물 경로
-  - `conversion/results/model_zoo/rk3588/buffalo_m_i8/*`
-  - `conversion/results/calibration/*` local-only
-  - `runtime/results/260401_1828_rknn_face_sdk_benchmark/summary.json`
+  - `assets/readme/demo_live-recognition_ryan.gif`
+  - `assets/readme/demo_model-switching_ryan.gif`
+  - `assets/readme/demo_gallery-registration_ryan.gif`
+  - `assets/readme/demo_npu-monitoring_ryan.gif`
+  - `assets/readme/orangepi-5-ultra-overview.png`
+  - `assets/readme/rk3588-family-badge.png`
+  - `assets/readme/demo_assets.json`
 - 다음 단계 연결
-  - `buffalo_m_i8` 비교 결과는 기본 runtime pack 결정으로 이어진다.
-  - live-state stream 구조는 이후 web console 고도화와 동일한 API 기반으로 이어진다.
+  - README 자산과 benchmark 설명은 이후 공개 소개 문구와 문서 고도화의 기준이 된다.
+  - `assets/readme/build_demo_assets.py`는 새 데모 자산이 추가될 때 같은 규칙으로 재사용한다.
 - 검증 방법과 완료 조건
-  - OrangePI 서비스가 `live-state` API를 응답한다.
-  - `capture_revision`, `result_revision`이 짧은 간격 샘플에서도 증가한다.
-  - gallery UI가 `새 프로필 추가 / 갤러리 목록 / 선택 인물 편집`으로 분리된다.
-  - `buffalo_m`과 `buffalo_m_i8` 비교 수치가 문서에 남는다.
+  - demo GIF 4개와 이미지 2개가 `assets/readme/`에 존재한다.
+  - root README가 새 자산을 직접 참조한다.
+  - README에 CPU 표, RKNN 표, `RKNN Lite2` 설명, 변환 provenance 설명이 모두 들어간다.
 - 체크리스트
-  - [x] gallery UI를 `관리 중심` 레이아웃으로 재구성
-  - [x] `인물 만들기`와 `이름 저장` 흐름을 `프로필 추가`, `이름 변경 저장`으로 분리
-  - [x] `/api/live-state`와 `/api/live-state/stream` 추가
-  - [x] backend `1초 polling 체감` 원인 제거
-  - [x] `capture_revision`, `result_revision`, 실제 추론 시간 노출
-  - [x] 반복 모델 전환 메모리 smoke
-  - [x] local-only calibration bundle 준비
-  - [x] `buffalo_m_i8` export
-  - [x] OrangePI `buffalo_m` vs `buffalo_m_i8` benchmark
-  - [x] canonical 문서 갱신
+  - [x] `사용자 추가 폴더` 입력 자산 인벤토리 확인
+  - [x] 대표 프레임 샘플로 데모 인물과 화면 구성을 재확인
+  - [x] README용 GIF 4개 생성
+  - [x] 입력 이미지 2개를 README용 자산으로 정리
+  - [x] 자산 생성 스크립트 추가
+  - [x] `demo_assets.json`에 이름 추론 근거 기록
+  - [x] root README 전면 개편
+  - [x] canonical logbook 갱신
 
 ## Recent Logs
 
@@ -211,3 +214,8 @@
 - 2026-04-01: gallery UI를 `새 프로필 추가`, `갤러리 목록`, `선택 인물 편집` 구조로 다시 나눠 저장된 인물 관리가 화면에서 바로 보이게 정리했다.
 - 2026-04-01: local-only `conversion/results/calibration/buffalo_m_i8/` 묶음을 만들고 `buffalo_m_i8` INT8 pack export를 성공했다.
 - 2026-04-01: OrangePI benchmark에서 `buffalo_m`은 `80.92 ms / 12.36 FPS`, `buffalo_m_i8`는 `38.63 ms / 25.89 FPS`를 기록했고, 서비스 모델 전환 `buffalo_sc -> buffalo_m_i8 -> buffalo_l -> buffalo_m`도 예외 없이 통과했다.
+- 2026-04-03: `repo/사용자 추가 폴더/`의 입력 자산이 실제로는 `영상 4개 + 이미지 2개`임을 확인했다.
+- 2026-04-03: 각 영상에서 대표 프레임을 뽑아 보면 데모 인물은 모두 `라이언 / Ryan`으로 보였고, 현재 OrangePI gallery metadata도 같은 이름 1명으로 일치했다.
+- 2026-04-03: root README가 직접 쓰는 공용 자산을 `assets/readme/` 아래로 정리하고, `build_demo_assets.py`로 GIF 4개와 이미지 2개를 재생성 가능하게 만들었다.
+- 2026-04-03: `demo_assets.json`에 입력 자산 메타데이터, 샘플 프레임 인덱스, `라이언 / Ryan` 추론 근거를 기록했다.
+- 2026-04-03: root README를 데모 GIF, CPU/RKNN benchmark, `RKNN Lite2` 설명, `공식 Rockchip toolchain + custom wrapper` 설명 중심으로 전면 개편했다.
